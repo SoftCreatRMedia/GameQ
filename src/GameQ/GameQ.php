@@ -263,7 +263,8 @@ class GameQ
     /**
      * Main method used to actually process all the added servers and return the information
      *
-     * @throws \Exception
+     * @throws QueryException
+     * @throws ProtocolException
      */
     public function process(): array
     {
