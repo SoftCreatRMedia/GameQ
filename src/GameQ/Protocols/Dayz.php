@@ -53,6 +53,6 @@ class Dayz extends Source
          * ...
          */
 
-        return 27016 + (($clientPort - 2302) / 100);
+        return 27016 + (int)(($clientPort - 2302) / 100);
     }
 }
