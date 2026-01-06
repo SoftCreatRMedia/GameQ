@@ -31,7 +31,6 @@ use GameQ\Result;
  */
 class Ase extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -136,9 +135,7 @@ class Ase extends Protocol
         return $result->fetch();
     }
 
-    /*
-     * Internal methods
-     */
+    // Internal methods
 
     /**
      * Handles processing the extra key/value pairs for server settings

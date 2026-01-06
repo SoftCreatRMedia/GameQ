@@ -124,6 +124,7 @@ class M2mp extends Protocol
      * Process the status response
      *
      * @return array
+     * @throws ProtocolException
      */
     protected function processStatus(Buffer $buffer)
     {
@@ -182,7 +183,7 @@ class M2mp extends Protocol
 
             // Only player name information is available
             // Add player name, encoded
-            $result->addPlayer('name', $this->convertToUtf8(trim($buffer->readPascalString(1, true))));
+            $result->addPlayer('name', Str::isoToUtf8(trim($buffer->readPascalString(1, true))));
         }
 
         return $result->fetch();

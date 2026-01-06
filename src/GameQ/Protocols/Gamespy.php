@@ -21,6 +21,7 @@ namespace GameQ\Protocols;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
 use GameQ\Buffer;
+use GameQ\Helpers\Str;
 use GameQ\Result;
 
 /**
@@ -30,7 +31,6 @@ use GameQ\Result;
  */
 class Gamespy extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -92,9 +92,7 @@ class Gamespy extends Protocol
         return $this->processStatus(new Buffer(implode('', $processed)));
     }
 
-    /*
-     * Internal methods
-     */
+    // Internal methods
 
     /**
      * Handle processing the status buffer
@@ -143,7 +141,7 @@ class Gamespy extends Protocol
                         if (str_starts_with($key, 'playername')) {
                             $numPlayers++;
                         }
-                        $result->addPlayer(substr($key, 0, $suffix), $this->convertToUtf8($val));
+                        $result->addPlayer(substr($key, 0, $suffix), Str::isoToUtf8($val));
                     }
                 } else {
                     // Regular variable so just add the value.

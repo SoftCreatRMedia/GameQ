@@ -36,7 +36,6 @@ use GameQ\Result;
  */
 class Ventrilo extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -92,10 +91,8 @@ class Ventrilo extends Protocol
 
     /**
      * Encryption table for the header
-     *
-     * @type array
      */
-    private $head_encrypt_table = [
+    private array $head_encrypt_table = [
         0x80,
         0xe5,
         0x0e,
@@ -356,10 +353,8 @@ class Ventrilo extends Protocol
 
     /**
      * Encryption table for the data
-     *
-     * @type array
      */
-    private $data_encrypt_table = [
+    private array $data_encrypt_table = [
         0x82,
         0x8b,
         0x7f,
@@ -626,7 +621,6 @@ class Ventrilo extends Protocol
      */
     public function processResponse(): mixed
     {
-
         // We need to decrypt the packets
         $decrypted = $this->decryptPackets($this->packets_response);
 
@@ -699,19 +693,19 @@ class Ventrilo extends Protocol
                         $this->processChannel($value, $channelFields, $result);
                         break;
 
-                    // Find the number of fields for the channels
+                        // Find the number of fields for the channels
                     case 'channelfields':
                         $channelFields = count(explode(',', $value));
                         break;
 
-                    // Find the number of fields for the players
+                        // Find the number of fields for the players
                     case 'clientfields':
                         $playerFields = count(explode(',', $value));
                         break;
 
-                    // By default we just add they key as an item
+                        // By default we just add they key as an item
                     default:
-                        $result->add($key, $this->convertToUtf8($value));
+                        $result->add($key, Str::isoToUtf8($value));
                         break;
                 }
             }
@@ -722,9 +716,7 @@ class Ventrilo extends Protocol
         return $result->fetch();
     }
 
-    /*
-     * Internal methods
-     */
+    // Internal methods
 
     /**
      * Decrypt the incoming packets
@@ -734,12 +726,11 @@ class Ventrilo extends Protocol
      */
     protected function decryptPackets(array $packets = [])
     {
-
         // This will be returned
         $decrypted = [];
 
         foreach ($packets as $packet) {
-            # Header :
+            // Header :
             $header = substr($packet, 0, 20);
 
             $header_items = [];
@@ -789,7 +780,7 @@ class Ventrilo extends Protocol
                 throw new ProtocolException(__METHOD__ . ": Too few packets received");
             }
 
-            # Data :
+            // Data :
             $table = $this->data_encrypt_table;
             $a1 = $header_items['datakey'] & 0xFF;
             $a2 = $header_items['datakey'] >> 8;
@@ -822,7 +813,6 @@ class Ventrilo extends Protocol
      */
     protected function processChannel(string $data, int $fieldCount, Result $result)
     {
-
         // Split the items on the comma
         $items = explode(",", $data, $fieldCount);
 
@@ -831,7 +821,7 @@ class Ventrilo extends Protocol
             // Split the key=value pair
             list($key, $value) = explode("=", $item, 2);
 
-            $result->addTeam(strtolower($key), $this->convertToUtf8($value));
+            $result->addTeam(strtolower($key), Str::isoToUtf8($value));
         }
     }
 
@@ -840,7 +830,6 @@ class Ventrilo extends Protocol
      */
     protected function processPlayer(string $data, int $fieldCount, Result $result)
     {
-
         // Split the items on the comma
         $items = explode(",", $data, $fieldCount);
 
@@ -849,7 +838,7 @@ class Ventrilo extends Protocol
             // Split the key=value pair
             list($key, $value) = explode("=", $item, 2);
 
-            $result->addPlayer(strtolower($key), $this->convertToUtf8($value));
+            $result->addPlayer(strtolower($key), Str::isoToUtf8($value));
         }
     }
 }

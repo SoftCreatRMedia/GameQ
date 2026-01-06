@@ -36,9 +36,7 @@ class Server
     public const SERVER_ID = 'id';
     public const SERVER_OPTIONS = 'options';
 
-    /*
-     * Server options keys
-     */
+    // Server options keys
 
     /*
      * Use this option when the query_port and client connect ports are different
@@ -139,7 +137,6 @@ class Server
      */
     protected function checkAndSetIpPort(string $ip_address): void
     {
-
         // Test for IPv6
         if (substr_count($ip_address, ':') > 1) {
             // See if we have a port, input should be in the format [::1]:27015 or similar
@@ -201,7 +198,6 @@ class Server
      */
     protected function checkAndSetServerOptions(): void
     {
-
         // Specific query port defined
         if (array_key_exists(self::SERVER_OPTIONS_QUERY_PORT, $this->options)) {
             $this->port_query = (int)$this->options[self::SERVER_OPTIONS_QUERY_PORT];
@@ -242,7 +238,6 @@ class Server
      */
     public function id(): string
     {
-
         return $this->id;
     }
 
@@ -251,7 +246,6 @@ class Server
      */
     public function ip(): string
     {
-
         return $this->ip;
     }
 
@@ -260,7 +254,6 @@ class Server
      */
     public function portClient(): int
     {
-
         return $this->port_client;
     }
 
@@ -269,7 +262,6 @@ class Server
      */
     public function portQuery(): int
     {
-
         return $this->port_query;
     }
 
@@ -278,7 +270,6 @@ class Server
      */
     public function protocol(): ?Protocol
     {
-
         return $this->protocol;
     }
 
@@ -296,16 +287,13 @@ class Server
         return sprintf($joinLink, $this->ip, $this->portClient());
     }
 
-    /*
-     * Socket holding
-     */
+    // Socket holding
 
     /**
      * Add a socket for this server to be reused
      */
     public function socketAdd(Core $socket): void
     {
-
         $this->sockets[] = $socket;
     }
 
@@ -314,7 +302,6 @@ class Server
      */
     public function socketGet(): ?Core
     {
-
         $socket = null;
 
         if (count($this->sockets) > 0) {

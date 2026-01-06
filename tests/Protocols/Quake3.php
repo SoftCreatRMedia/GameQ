@@ -22,18 +22,17 @@ use GameQ\Exception\ProtocolException;
 
 class Quake3 extends Base
 {
-
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Quake3
+     * @var \GameQ\Protocols\Quake3
      */
     protected $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array
      */
     protected $packets = [
         \GameQ\Protocol::PACKET_STATUS => "\xFF\xFF\xFF\xFF\x67\x65\x74\x73\x74\x61\x74\x75\x73\x0A",

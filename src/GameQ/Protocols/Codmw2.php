@@ -19,6 +19,8 @@
 namespace GameQ\Protocols;
 
 use GameQ\Buffer;
+use GameQ\Exception\ProtocolException;
+use GameQ\Helpers\Str;
 use GameQ\Result;
 
 /**
@@ -39,6 +41,10 @@ class Codmw2 extends Quake3
      */
     protected string $name_long = "Call of Duty: Modern Warfare 2";
     
+    /**
+     * @return array
+     * @throws ProtocolException
+     */
     protected function processPlayers(Buffer $buffer)
     {
         // Temporarily cache players in order to remove last
@@ -59,7 +65,7 @@ class Codmw2 extends Quake3
             $playerInfo->skip();
 
             // Add player name, encoded
-            $player['name'] = $this->convertToUtf8(trim(($playerInfo->readString('"'))));
+            $player['name'] = Str::isoToUtf8(trim(($playerInfo->readString('"'))));
 
             // Add player
             $players[] = $player;

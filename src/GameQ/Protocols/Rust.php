@@ -29,7 +29,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Rust extends Source
 {
-
     /**
      * String name of this protocol class
      */

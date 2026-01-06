@@ -21,20 +21,20 @@ namespace GameQ\Protocols;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
 use GameQ\Buffer;
+use GameQ\Helpers\Str;
 use GameQ\Result;
 
 /**
  * GameSpy2 Protocol class
  *
  * Given the ability for non utf-8 characters to be used as hostnames, player names, etc... this
- * version returns all strings utf-8 encoded (utf8_encode).  To access the proper version of a
- * string response you must use utf8_decode() on the specific response.
+ * version returns all strings utf-8 encoded.  To access the proper version of a
+ * string response you must use Str::utf8ToIso() on the specific response.
  *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Gamespy2 extends Protocol
 {
-
     /**
      * Define the state of this class
      */
@@ -105,7 +105,6 @@ class Gamespy2 extends Protocol
      */
     public function processResponse(): mixed
     {
-
         // Will hold the packets after sorting
         $packets = [];
 
@@ -143,9 +142,7 @@ class Gamespy2 extends Protocol
         return $results;
     }
 
-    /*
-     * Internal methods
-     */
+    // Internal methods
 
     /**
      * Handles processing the details data into a usable format
@@ -156,7 +153,6 @@ class Gamespy2 extends Protocol
      */
     protected function processDetails(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -166,7 +162,7 @@ class Gamespy2 extends Protocol
             if ($key === '') {
                 break;
             }
-            $result->add($key, $this->convertToUtf8($buffer->readString()));
+            $result->add($key, Str::isoToUtf8($buffer->readString()));
         }
 
         return $result->fetch();
@@ -181,7 +177,6 @@ class Gamespy2 extends Protocol
      */
     protected function processPlayers(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -204,7 +199,6 @@ class Gamespy2 extends Protocol
      */
     protected function parsePlayerTeam(string $dataType, Buffer $buffer, Result $result)
     {
-
         // Do count
         $result->add('num_' . $dataType, $buffer->readInt8());
 
@@ -231,7 +225,7 @@ class Gamespy2 extends Protocol
         // Get the values
         while ($buffer->getLength() > 4) {
             foreach ($varNames as $varName) {
-                $result->addSub($dataType, $this->convertToUtf8($varName), $this->convertToUtf8($buffer->readString()));
+                $result->addSub($dataType, Str::isoToUtf8($varName), Str::isoToUtf8($buffer->readString()));
             }
             if ($buffer->lookAhead() === "\x00") {
                 $buffer->skip();

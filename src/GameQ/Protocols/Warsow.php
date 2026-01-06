@@ -69,7 +69,7 @@ class Warsow extends Quake3
             $playerInfo->skip();
 
             // Add player name, encoded
-            $result->addPlayer('name', $this->convertToUtf8(trim(($playerInfo->readString('"')))));
+            $result->addPlayer('name', Str::isoToUtf8(trim(($playerInfo->readString('"')))));
 
             // Skip space
             $playerInfo->skip();

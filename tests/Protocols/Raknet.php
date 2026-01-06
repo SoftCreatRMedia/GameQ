@@ -25,14 +25,14 @@ class Raknet extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Raknet
+     * @var \GameQ\Protocols\Raknet
      */
     protected $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array
      */
     protected $packets = [
         \GameQ\Protocol::PACKET_STATUS => "\x01%s%s\x02\x00\x00\x00\x00\x00\x00\x00",

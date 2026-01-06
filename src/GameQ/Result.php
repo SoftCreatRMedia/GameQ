@@ -89,7 +89,6 @@ class Result
      */
     public function fetch(): array
     {
-
         return $this->result;
     }
 

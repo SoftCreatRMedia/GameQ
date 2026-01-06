@@ -33,7 +33,6 @@ use GameQ\Result;
  */
 class Bf3 extends Protocol
 {
-
     /**
      * Array of packets we want to query.
      */
@@ -117,7 +116,6 @@ class Bf3 extends Protocol
      */
     public function processResponse(): mixed
     {
-
         // Holds the results sent back
         $results = [];
 
@@ -173,9 +171,7 @@ class Bf3 extends Protocol
         return $results;
     }
 
-    /*
-     * Internal Methods
-     */
+    // Internal Methods
 
     /**
      * Decode the buffer into a usable format
@@ -185,7 +181,6 @@ class Bf3 extends Protocol
      */
     protected function decode(Buffer $buffer)
     {
-
         $items = [];
 
         // Get the number of words in this buffer
@@ -211,7 +206,6 @@ class Bf3 extends Protocol
      */
     protected function processDetails(Buffer $buffer)
     {
-
         // Decode into items
         $items = $this->decode($buffer);
 
@@ -276,7 +270,6 @@ class Bf3 extends Protocol
      */
     protected function processVersion(Buffer $buffer)
     {
-
         // Decode into items
         $items = $this->decode($buffer);
 
@@ -298,7 +291,6 @@ class Bf3 extends Protocol
      */
     protected function processPlayers(Buffer $buffer)
     {
-
         // Decode into items
         $items = $this->decode($buffer);
 

@@ -123,7 +123,7 @@ class Openttd extends Protocol
 
         switch ($protocol_version) {
             case 4:
-                $num_grfs = $buffer->readInt8(); #number of grfs
+                $num_grfs = $buffer->readInt8(); //number of grfs
                 $result->add('num_grfs', $num_grfs);
                 //$buffer->skip ($num_grfs * 20); #skip grfs id and md5 hash
 
@@ -131,16 +131,18 @@ class Openttd extends Protocol
                     $result->add('grfs_'.$i.'_ID', strtoupper(bin2hex($buffer->read(4))));
                     $result->add('grfs_'.$i.'_MD5', strtoupper(bin2hex($buffer->read(16))));
                 }
-                // No break, cascades all the down even if case is meet
+                // no break, cascades all the down even if case is meet
             case 3:
                 $result->add('game_date', $buffer->readInt32());
                 $result->add('start_date', $buffer->readInt32());
                 // Cascades all the way down even if case is meet
+                // no break
             case 2:
                 $result->add('companies_max', $buffer->readInt8());
                 $result->add('companies_on', $buffer->readInt8());
                 $result->add('spectators_max', $buffer->readInt8());
                 // Cascades all the way down even if case is meet
+                // no break
             case 1:
                 $result->add('hostname', $buffer->readString());
                 $result->add('version', $buffer->readString());
@@ -154,7 +156,7 @@ class Openttd extends Protocol
                 $result->add('clients', $buffer->readInt8());
                 $result->add('spectators', $buffer->readInt8());
                 if ($protocol_version < 3) {
-                    $days = ( 365 * 1920 + 1920 / 4 - 1920 / 100 + 1920 / 400 );
+                    $days = (365 * 1920 + 1920 / 4 - 1920 / 100 + 1920 / 400);
                     $result->add('game_date', $buffer->readInt16() + $days);
                     $result->add('start_date', $buffer->readInt16() + $days);
                 }

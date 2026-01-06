@@ -32,7 +32,6 @@ use GameQ\Result;
  */
 class Ship extends Source
 {
-
     /**
      * String name of this protocol class
      */
@@ -53,7 +52,6 @@ class Ship extends Source
      */
     protected function processPlayers(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 

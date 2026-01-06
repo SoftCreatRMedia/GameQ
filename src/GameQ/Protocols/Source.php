@@ -118,7 +118,6 @@ class Source extends Protocol
      */
     public function challengeParseAndApply(Buffer $challenge_buffer): bool
     {
-
         // Skip the header
         $challenge_buffer->skip(4);
 
@@ -206,22 +205,18 @@ class Source extends Protocol
         return $results;
     }
 
-    /*
-     * Internal methods
-     */
+    // Internal methods
 
     /**
      * Process the split packets and decompress if necessary
      *
      * @param       $packet_id
      * @param array $packets
-     *
      * @return string
      * @throws ProtocolException
      */
     protected function processPackets($packet_id, array $packets = [])
     {
-
         // Init array so we can order
         $packs = [];
 
@@ -316,7 +311,6 @@ class Source extends Protocol
      */
     protected function processDetails(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -385,7 +379,6 @@ class Source extends Protocol
      */
     protected function processDetailsGoldSource(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -429,7 +422,6 @@ class Source extends Protocol
      */
     protected function processPlayers(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -463,7 +455,6 @@ class Source extends Protocol
      */
     protected function processRules(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 

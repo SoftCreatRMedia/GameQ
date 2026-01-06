@@ -31,8 +31,6 @@ class Test extends Base
 {
     /**
      * Apply the filter.  For this we just return whatever is sent
-     *
-     * @return mixed
      */
     public function apply(array $result, Server $server): mixed
     {

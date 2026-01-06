@@ -47,7 +47,7 @@ class GameQ
     /**
      * Holds the instance of itself
      *
-     * @type self
+     * @var self
      */
     protected static GameQ $instance;
 
@@ -61,7 +61,7 @@ class GameQ
         return self::$instance;
     }
 
-    /* Dynamic Section */
+    // Dynamic Section
 
     /**
      * Default options
@@ -162,7 +162,6 @@ class GameQ
      */
     public function addServers(array $servers = []): self
     {
-
         // Loop through all the servers and add them
         foreach ($servers as $server_info) {
             $this->addServer($server_info);
@@ -549,7 +548,6 @@ class GameQ
      */
     protected function doApplyFilters(array $results, Server $server): array
     {
-
         // Loop over the filters
         foreach ($this->options['filters'] as $filterOptions) {
             // Try to do this filter

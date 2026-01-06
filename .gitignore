@@ -1,12 +1,28 @@
+# Development
+/remotes/
+test.php
 /.buildpath
 /.project
 /.settings/*
-vendor
+
+# JetBrains
 /.idea
-.phpunit.result.cache
+*.iml
+
+# Composer
+vendor
 composer.lock
 composer.phar
+
+# ApiGen
+build/apigen
+
+# PHPUnit
+phpunit.xml
+.phpunit.result.cache
+coverage/
+build/logs/*
 !build/logs/.gitkeep
-build/logs/
-test.php
-*.iml
+
+# PHP Code Sniffer Fixer
+.php-cs-fixer.cache

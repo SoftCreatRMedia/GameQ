@@ -98,6 +98,10 @@ class Quake3 extends Protocol
         return $this->{$this->responses[$header]}($buffer);
     }
 
+    /**
+     * @return array
+     * @throws ProtocolException
+     */
     protected function processStatus(Buffer $buffer)
     {
         // We need to split the data and offload
@@ -127,7 +131,7 @@ class Quake3 extends Protocol
             // Add result
             $result->add(
                 trim($buffer->readString('\\')),
-                $this->convertToUtf8(trim($buffer->readStringMulti(['\\', "\x0a"])))
+                Str::isoToUtf8(trim($buffer->readStringMulti(['\\', "\x0a"])))
             );
         }
 
@@ -171,7 +175,7 @@ class Quake3 extends Protocol
             }
 
             // Add player name, encoded
-            $result->addPlayer('name', $this->convertToUtf8(trim($buffer->readString('"'))));
+            $result->addPlayer('name', Str::isoToUtf8(trim($buffer->readString('"'))));
 
             // Burn ending delimiter
             $buffer->read();

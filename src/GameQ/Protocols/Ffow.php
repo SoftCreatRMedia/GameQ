@@ -189,8 +189,7 @@ class Ffow extends Protocol
             // Check for map
             if (str_contains($key, "Map:")) {
                 $result->addSub("maplist", "name", $buffer->readString());
-            } else // Regular rule
-            {
+            } else { // Regular rule
                 $result->add($key, $buffer->readString());
             }
         }

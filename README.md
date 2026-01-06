@@ -1,4 +1,5 @@
 # GameQ Fork by Krymo Software
+
 [![CI](https://github.com/KrymoSoftware/GameQ/actions/workflows/Tests.yml/badge.svg)](https://github.com/KrymoSoftware/GameQ/actions/workflows/Tests.yml)
 [![License](https://img.shields.io/badge/license-LGPL-blue.svg?style=flat)](https://packagist.org/packages/krymosoftware/gameq)
 
@@ -8,11 +9,14 @@ This repository is a maintained fork of [Austinb/GameQ](https://github.com/Austi
 While we don't plan to add new games for now, we'll ensure compatibility with the latest PHP versions and fix issues as they arise.
 
 ## Requirements
+
 * PHP 8.1+ - [Tested](https://github.com/KrymoSoftware/GameQ/actions/workflows/Tests.yml) in PHP 8.1, 8.2 and 8.3
 * [Bzip2](http://www.php.net/manual/en/book.bzip2.php) - Used for A2S compressed responses
 
 ## Installation
+
 #### [Composer](https://getcomposer.org/)
+
 This method assumes you already have composer [installed](https://getcomposer.org/doc/00-intro.md) and working properly. Add `krymosoftware/gameq` as a requirement to composer.json by using `composer require krymosoftware/gameq:^4.0.0` or by manually adding the following to the *composer.json* file in the **require** section:
 
 ```json
@@ -22,14 +26,17 @@ This method assumes you already have composer [installed](https://getcomposer.or
 Update your packages with `composer update` or install with `composer install`.
 
 #### Standalone Library
+
 Download the [latest version](https://github.com/KrymoSoftware/GameQ/releases) of the library and unpack it into your project. Add the following to your bootstrap file:
 
 ```php
 require_once('/path/to/src/GameQ/Autoloader.php');
 ```
+
 The `Autoloader.php` file provides the same autoloading functionality as the Composer installation.
 
-## Example
+## Useage
+
 ```php
 $GameQ = new \GameQ\GameQ();
 $GameQ->addServer([
@@ -38,13 +45,15 @@ $GameQ->addServer([
 ]);
 $results = $GameQ->process();
 ```
-Need more? See [Examples](https://github.com/Austinb/GameQ/wiki/Examples-v3).
 
-## Contributing 
- 
+Need more? See the [Examples](https://github.com/Austinb/GameQ/wiki/Examples-v3) as well as the [Documentation](https://austinb.github.io/GameQ/api/).
+
+## Contributing
+
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ## License
+
 See [LICENSE](LICENSE.lgpl) for more information
 
 ## Third Party Provider

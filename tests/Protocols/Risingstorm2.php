@@ -28,7 +28,7 @@ class Risingstorm2 extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Risingstorm2
+     * @var \GameQ\Protocols\Risingstorm2
      */
     protected $stub;
 

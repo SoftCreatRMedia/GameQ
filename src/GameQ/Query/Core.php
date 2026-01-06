@@ -27,11 +27,10 @@ use GameQ\Exception\QueryException;
  */
 abstract class Core
 {
-
     /**
      * The socket used by this resource
      *
-     * @type null|resource
+     * @var null|resource
      */
     public $socket;
 

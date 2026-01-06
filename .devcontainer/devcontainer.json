@@ -1,0 +1,27 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/php
+{
+	"name": "PHP",
+	"build": {
+		"dockerfile": "docker/Dockerfile"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"junstyle.php-cs-fixer",
+				"GitHub.vscode-github-actions"
+			],
+			"settings": {
+				"php-cs-fixer.onsave": true,
+				"[php]": {
+					"editor.defaultFormatter": "junstyle.php-cs-fixer"
+				}
+			}
+		}
+	},
+	"postCreateCommand": ".devcontainer/postCreate.sh",
+	"remoteUser": "vscode"
+}

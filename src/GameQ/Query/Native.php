@@ -35,7 +35,6 @@ class Native extends Core
      */
     public function get(): mixed
     {
-
         // No socket for this server, make one
         if (is_null($this->socket)) {
             $this->create();
@@ -54,7 +53,6 @@ class Native extends Core
      */
     public function write(string|array $data): int
     {
-
         try {
             // No socket for this server, make one
             if (is_null($this->socket)) {
@@ -73,7 +71,6 @@ class Native extends Core
      */
     public function close(): void
     {
-
         if ($this->socket) {
             fclose($this->socket);
             $this->socket = null;
@@ -87,7 +84,6 @@ class Native extends Core
      */
     protected function create(): void
     {
-
         // Create the remote address
         $remote_addr = sprintf("%s://%s:%d", $this->transport, $this->ip, $this->port);
 
@@ -183,7 +179,7 @@ class Native extends Core
 
             // Loop the sockets that received data back
             foreach ($read as $socket) {
-                /* @var $socket resource */
+                // @var $socket resource
 
                 // See if we have a response
                 if (($response = fread($socket, 32768)) === false) {

@@ -36,7 +36,6 @@ use GameQ\Result;
  */
 class Bfbc2 extends Protocol
 {
-
     /**
      * Array of packets we want to query.
      */
@@ -152,9 +151,7 @@ class Bfbc2 extends Protocol
         return $results;
     }
 
-    /*
-     * Internal Methods
-     */
+    // Internal Methods
 
     /**
      * Decode the buffer into a usable format
@@ -164,7 +161,6 @@ class Bfbc2 extends Protocol
      */
     protected function decode(Buffer $buffer)
     {
-
         $items = [];
 
         // Get the number of words in this buffer
@@ -186,10 +182,10 @@ class Bfbc2 extends Protocol
      * Process the server details
      *
      * @return array
+     * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer)
     {
-
         // Decode into items
         $items = $this->decode($buffer);
 
@@ -247,6 +243,7 @@ class Bfbc2 extends Protocol
      * Process the server version
      *
      * @return array
+     * @throws ProtocolException
      */
     protected function processVersion(Buffer $buffer)
     {
@@ -267,10 +264,10 @@ class Bfbc2 extends Protocol
      * Process the players
      *
      * @return array
+     * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer)
     {
-
         // Decode into items
         $items = $this->decode($buffer);
 

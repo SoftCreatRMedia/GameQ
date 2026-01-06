@@ -20,6 +20,7 @@ namespace GameQ\Protocols;
 
 use GameQ\Protocol;
 use GameQ\Buffer;
+use GameQ\Helpers\Str;
 use GameQ\Result;
 use GameQ\Server;
 use GameQ\Exception\ProtocolException;
@@ -34,7 +35,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Samp extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -127,7 +127,6 @@ class Samp extends Protocol
      */
     public function processResponse(): mixed
     {
-
         // Results that will be returned
         $results = [];
 
@@ -169,9 +168,7 @@ class Samp extends Protocol
         return $results;
     }
 
-    /*
-     * Internal methods
-     */
+    // Internal methods
 
     /**
      * Handles processing the server status data
@@ -181,7 +178,6 @@ class Samp extends Protocol
      */
     protected function processStatus(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -194,7 +190,7 @@ class Samp extends Protocol
         $result->add('max_players', $buffer->readInt16());
 
         // These are read differently for these last 3
-        $result->add('servername', $this->convertToUtf8($buffer->read($buffer->readInt32())));
+        $result->add('servername', Str::isoToUtf8($buffer->read($buffer->readInt32())));
         $result->add('gametype', $buffer->read($buffer->readInt32()));
         $result->add('language', $buffer->read($buffer->readInt32()));
 
@@ -209,7 +205,6 @@ class Samp extends Protocol
      */
     protected function processPlayers(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -219,7 +214,7 @@ class Samp extends Protocol
         // Run until we run out of buffer
         while ($buffer->getLength()) {
             $result->addPlayer('id', $buffer->readInt8());
-            $result->addPlayer('name', $this->convertToUtf8($buffer->readPascalString()));
+            $result->addPlayer('name', Str::isoToUtf8($buffer->readPascalString()));
             $result->addPlayer('score', $buffer->readInt32());
             $result->addPlayer('ping', $buffer->readInt32());
         }
@@ -235,7 +230,6 @@ class Samp extends Protocol
      */
     protected function processRules(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 

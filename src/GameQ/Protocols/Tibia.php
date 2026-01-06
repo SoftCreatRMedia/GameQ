@@ -34,7 +34,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Tibia extends Protocol
 {
-
     /**
      * Array of packets we want to query.
      */

@@ -32,7 +32,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Lhmp extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -136,9 +135,7 @@ class Lhmp extends Protocol
         return $results;
     }
 
-    /*
-     * Internal methods
-     */
+    // Internal methods
 
     /**
      * Handles processing the details data into a usable format
@@ -148,7 +145,6 @@ class Lhmp extends Protocol
      */
     protected function processDetails(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -156,10 +152,10 @@ class Lhmp extends Protocol
         $result->add('password', $buffer->readString());
         $result->add('numplayers', $buffer->readInt16());
         $result->add('maxplayers', $buffer->readInt16());
-        $result->add('servername', $this->convertToUtf8($buffer->readPascalString()));
+        $result->add('servername', Str::isoToUtf8($buffer->readPascalString()));
         $result->add('gamemode', $buffer->readPascalString());
-        $result->add('website', $this->convertToUtf8($buffer->readPascalString()));
-        $result->add('mapname', $this->convertToUtf8($buffer->readPascalString()));
+        $result->add('website', Str::isoToUtf8($buffer->readPascalString()));
+        $result->add('mapname', Str::isoToUtf8($buffer->readPascalString()));
 
         return $result->fetch();
     }
@@ -172,7 +168,6 @@ class Lhmp extends Protocol
      */
     protected function processPlayers(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -185,7 +180,7 @@ class Lhmp extends Protocol
             if (($id = $buffer->readInt16()) !== 0) {
                 // Add the results
                 $result->addPlayer('id', $id);
-                $result->addPlayer('name', $this->convertToUtf8($buffer->readPascalString()));
+                $result->addPlayer('name', Str::isoToUtf8($buffer->readPascalString()));
             }
         }
 

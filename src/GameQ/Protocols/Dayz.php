@@ -26,7 +26,6 @@ namespace GameQ\Protocols;
  */
 class Dayz extends Source
 {
-
     /**
      * String name of this protocol class
      */
@@ -42,7 +41,6 @@ class Dayz extends Source
      */
     public function findQueryPort(int $clientPort): int
     {
-
         /*
          * Port layout:
          * 2302 - 27016

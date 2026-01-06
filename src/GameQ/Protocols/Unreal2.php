@@ -30,7 +30,6 @@ use GameQ\Result;
  */
 class Unreal2 extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -96,7 +95,6 @@ class Unreal2 extends Protocol
      */
     public function processResponse(): mixed
     {
-
         // Will hold the packets after sorting
         $packets = [];
 
@@ -134,9 +132,7 @@ class Unreal2 extends Protocol
         return $results;
     }
 
-    /*
-     * Internal methods
-     */
+    // Internal methods
 
     /**
      * Handles processing the details data into a usable format
@@ -147,7 +143,6 @@ class Unreal2 extends Protocol
      */
     protected function processDetails(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -155,8 +150,8 @@ class Unreal2 extends Protocol
         $result->add('serverip', $buffer->readPascalString(1)); // empty
         $result->add('gameport', $buffer->readInt32());
         $result->add('queryport', $buffer->readInt32()); // 0
-        $result->add('servername', $this->convertToUtf8($buffer->readPascalString(1)));
-        $result->add('mapname', $this->convertToUtf8($buffer->readPascalString(1)));
+        $result->add('servername', Str::isoToUtf8($buffer->readPascalString(1)));
+        $result->add('mapname', Str::isoToUtf8($buffer->readPascalString(1)));
         $result->add('gametype', $buffer->readPascalString(1));
         $result->add('numplayers', $buffer->readInt32());
         $result->add('maxplayers', $buffer->readInt32());
@@ -173,7 +168,6 @@ class Unreal2 extends Protocol
      */
     protected function processPlayers(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -183,7 +177,7 @@ class Unreal2 extends Protocol
             if (($id = $buffer->readInt32()) !== 0) {
                 // Add the results
                 $result->addPlayer('id', $id);
-                $result->addPlayer('name', $this->convertToUtf8($buffer->readPascalString(1)));
+                $result->addPlayer('name', Str::isoToUtf8($buffer->readPascalString(1)));
                 $result->addPlayer('ping', $buffer->readInt32());
                 $result->addPlayer('score', $buffer->readInt32());
 
@@ -205,7 +199,6 @@ class Unreal2 extends Protocol
      */
     protected function processRules(Buffer $buffer)
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -220,7 +213,7 @@ class Unreal2 extends Protocol
                 $key .= ++$inc;
             }
 
-            $result->add(strtolower($key), $this->convertToUtf8($buffer->readPascalString(1)));
+            $result->add(strtolower($key), Str::isoToUtf8($buffer->readPascalString(1)));
         }
 
         return $result->fetch();

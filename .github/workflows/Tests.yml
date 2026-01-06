@@ -16,7 +16,7 @@ jobs:
         php: [8.1, 8.2, 8.3]
         ocular: [^1.9]
         experimental: [false]
-        composer-extra: ['']
+        composer-extra: [""]
         include:
           - php: 8.4
             experimental: true
@@ -24,7 +24,6 @@ jobs:
       PHP_VERSION: ${{ matrix.php }}
     name: PHP ${{ matrix.php }}
     steps:
-
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -32,7 +31,7 @@ jobs:
           extensions: bz2,xml,curl
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 10
 
@@ -40,14 +39,14 @@ jobs:
         run: composer validate
 
       - name: Cache composer files
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.composer/cache/files
           key: dependencies-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
 
       - name: Install dependencies using composer
         run: composer install --prefer-dist --no-interaction ${{ matrix.composer-extra }}
-       
+
       - name: PHP CodeStyle
         run: |
           mkdir -p build/logs
