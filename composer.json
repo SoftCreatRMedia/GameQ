@@ -62,11 +62,11 @@
   "require": {
     "php": ">=8.1",
     "ext-bz2": "*",
+    "ext-curl": "*",
     "ext-xml": "*",
     "ext-simplexml": "*"
   },
   "require-dev": {
-    "ext-curl": "*",
     "phpunit/phpunit": "^9.0",
     "phpunit/php-invoker": "*",
     "squizlabs/php_codesniffer": "3.*@stable",
