@@ -1,6 +1,6 @@
 <?php
 ini_set('display_errors', 1);
-// Load auto loader
+// Load autoloader
 require_once(__DIR__ . '/../src/GameQ/Autoloader.php');
 
 // Define the protocols path
@@ -17,16 +17,20 @@ while (false !== ($entry = $dir->read())) {
         continue;
     }
 
-    // Lets get some info on the class
-    $reflection = new ReflectionClass('\\GameQ\\Protocols\\' . pathinfo($entry, PATHINFO_FILENAME));
+    try {
+        // Let's get some info on the class
+        $reflection = new ReflectionClass('\\GameQ\\Protocols\\' . pathinfo($entry, PATHINFO_FILENAME));
 
-    // Check to make sure we can actually load the class
-    if (!$reflection->IsInstantiable()) {
+        // Check to make sure we can actually load the class
+        if (!$reflection->isInstantiable()) {
+            continue;
+        }
+
+        // Load up the class so we can get info
+        $class = $reflection->newInstance();
+    } catch (ReflectionException) {
         continue;
     }
-
-    // Load up the class so we can get info
-    $class = $reflection->newInstance();
 
     // Add it to the list
     $protocols[ $class->name() ] = [
@@ -96,32 +100,22 @@ ksort($protocols);
     <tbody>
     <?php
 
-    foreach ($protocols AS $gameq => $info) {
-
-
-        switch ($info['state']) {
-            case 1:
-                $state = 'Testing';
-                break;
-
-            case 2:
-                $state = 'Beta';
-                break;
-
-            case 3:
-                $state = 'Stable';
-                break;
-
-            case 4:
-                $state = 'Deprecated';
-                break;
-        }
+    foreach ($protocols as $gameq => $info) {
+        $state = match ($info['state']) {
+            \GameQ\Protocol::STATE_TESTING => 'Testing',
+            \GameQ\Protocol::STATE_BETA => 'Beta',
+            \GameQ\Protocol::STATE_STABLE => 'Stable',
+            \GameQ\Protocol::STATE_DEPRECATED => 'Deprecated',
+            default => 'Unknown',
+        };
 
         $cls = empty($cls) ? ' class="uneven"' : '';
-        printf("<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>\n", $cls,
+        printf(
+            "<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>\n",
+            $cls,
             htmlentities($info['name']),
             $gameq,
-            $state
+            $state,
         );
     }
     ?>

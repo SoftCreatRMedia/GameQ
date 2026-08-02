@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,7 +26,7 @@ namespace GameQ\Protocols;
  * @author  naXe <naxeify@gmail.com>
  * @author  Austin Bischoff <austin@codebeard.com>
  */
-class Codwaw extends Quake3
+class Codwaw extends Cod
 {
     /**
      * String name of this protocol class

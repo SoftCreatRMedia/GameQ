@@ -55,24 +55,26 @@ try {
 
     // Make sure options exist
     if (!array_key_exists('server', $options) || !array_key_exists('protocol', $options)) {
-        throw new Exception('Missing arguments');
+        throw new InvalidArgumentException('Missing arguments');
     }
 
     // Check the options
     if (array_key_exists('options', $options)) {
-        if (($server_options = json_decode($options['options'], true)) === null) {
-            throw new Exception('The options setting must be a JSON string');
+        $server_options = json_decode($options['options'], true, 512, JSON_THROW_ON_ERROR);
+
+        if (!is_array($server_options)) {
+            throw new InvalidArgumentException('The options setting must decode to a JSON object or array.');
         }
     } else {
-        $server_options = [ ];
+        $server_options = [];
     }
 
     // Build the directory where we want to store this data
     $provider_dir = sprintf('%s/Providers/%s', __DIR__, ucfirst(strtolower($options['protocol'])));
 
     // Make the directory if it does not already exist
-    if (!is_dir($provider_dir)) {
-        mkdir($provider_dir, 0751, true);
+    if (!is_dir($provider_dir) && !mkdir($provider_dir, 0751, true) && !is_dir($provider_dir)) {
+        throw new RuntimeException(sprintf('Unable to create provider directory "%s".', $provider_dir));
     }
 
     // Figure out the number of files in the provider directory

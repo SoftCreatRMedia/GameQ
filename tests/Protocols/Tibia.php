@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,25 +26,25 @@ class Tibia extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Tibia
+     * @var \GameQ\Protocols\Tibia
      */
-    protected $stub;
+    protected \GameQ\Protocols\Tibia $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_STATUS => "\x06\x00\xFF\xFF\x69\x6E\x66\x6F",
     ];
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Tibia();
@@ -52,19 +53,19 @@ class Tibia extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test invalid xml response without debug
      */
-    public function testInvalidPacketType()
+    public function testInvalidPacketType(): void
     {
         // Read in a Tibia source file
-        $source = file_get_contents(sprintf('%s/Providers/Tibia/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Tibia/1_response.txt', __DIR__));
 
         // Add bogus characters to the response
         $source = 'data' . $source . 'data';
@@ -72,19 +73,19 @@ class Tibia extends Base
         // Should show up as offline
         $testResult = $this->queryTest('127.0.0.1:7171', 'tibia', explode(PHP_EOL . '||' . PHP_EOL, $source), false);
 
-        $this->assertFalse($testResult['gq_online']);
+        self::assertFalse($testResult['gq_online']);
     }
 
     /**
      * Test for invalid response in response
      */
-    public function testInvalidPacketTypeDebug()
+    public function testInvalidPacketTypeDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Tibia::processResponse Unable to load XML string.");
+        $this->expectExceptionMessageContains("GameQ\Protocols\Tibia::processResponse Unable to load XML string.");
 
         // Read in a Tibia source file
-        $source = file_get_contents(sprintf('%s/Providers/Tibia/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Tibia/1_response.txt', __DIR__));
 
         // Add bogus characters to the response
         $source = 'data' . $source . 'data';
@@ -96,22 +97,22 @@ class Tibia extends Base
     /**
      * Test responses for Tibia
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'tibia',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

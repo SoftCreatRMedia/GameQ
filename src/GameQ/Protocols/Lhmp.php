@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,10 +19,10 @@
 
 namespace GameQ\Protocols;
 
-use GameQ\Protocol;
 use GameQ\Buffer;
-use GameQ\Result;
 use GameQ\Exception\ProtocolException;
+use GameQ\Protocol;
+use GameQ\Result;
 
 /**
  * Lost Heaven Protocol class
@@ -32,7 +33,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Lhmp extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -94,10 +94,10 @@ class Lhmp extends Protocol
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Will hold the packets after sorting
         $packets = [];
@@ -115,7 +115,7 @@ class Lhmp extends Protocol
 
         unset($buffer);
 
-        $results = [];
+        $resultSets = [];
 
         // Now let's iterate and process
         foreach ($packets as $header => $packetGroup) {
@@ -125,15 +125,15 @@ class Lhmp extends Protocol
             }
 
             // Now we need to call the proper method
-            $results = array_merge(
-                $results,
-                call_user_func_array([$this, $this->responses[$header]], [new Buffer(implode($packetGroup))])
+            $resultSets[] = $this->processResponseMethod(
+                $this->responses[$header],
+                new Buffer(implode($packetGroup)),
             );
         }
 
         unset($packets);
 
-        return $results;
+        return array_merge(...$resultSets);
     }
 
     /*
@@ -143,12 +143,11 @@ class Lhmp extends Protocol
     /**
      * Handles processing the details data into a usable format
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processDetails(Buffer $buffer)
+    protected function processDetails(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -167,12 +166,11 @@ class Lhmp extends Protocol
     /**
      * Handles processing the player data into a usable format
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -28,22 +29,22 @@ class Sco extends Base
     /**
      * Test responses for Sven Co-op
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'sco',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

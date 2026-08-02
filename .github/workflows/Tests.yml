@@ -6,55 +6,96 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  CI:
+  tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
         php: [8.1, 8.2, 8.3, 8.4, 8.5]
-        ocular: [^1.9]
         experimental: [false]
         composer-extra: ['']
         include:
           - php: 8.6
             experimental: true
+            composer-extra: '--ignore-platform-req=php+'
     env:
       PHP_VERSION: ${{ matrix.php }}
     name: PHP ${{ matrix.php }}
     steps:
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php }}
-          extensions: bz2,xml,curl
-
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
         with:
           fetch-depth: 10
 
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          extensions: bcmath,bz2,curl,intl,mbstring,xml
+          tools: composer:v2
+
       - name: Validate composer.json
-        run: composer validate
+        run: composer validate --strict
 
       - name: Cache composer files
-        uses: actions/cache@v6
+        uses: actions/cache@v5
         with:
           path: ~/.composer/cache/files
           key: dependencies-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
 
-      - name: Install dependencies using composer
-        run: composer install --prefer-dist --no-interaction ${{ matrix.composer-extra }}
-       
-      - name: PHP CodeStyle
-        run: |
-          mkdir -p build/logs
-          composer phpcs
+      - name: Install dependencies
+        run: composer update --no-interaction --no-progress ${{ matrix.composer-extra }}
+
+      - name: Check syntax
+        run: composer lint
+
+      - name: Run PHPUnit
+        run: composer phpunit
+
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+          extensions: bcmath,bz2,curl,intl,mbstring,xml
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer update --no-interaction --no-progress
+
+      - name: Check coding standard
+        run: composer phpcs
 
       - name: Run PHPStan
         run: composer phpstan
 
-      - name: Run PHPUnit
-        run: composer phpunit
+      - name: Check backward compatibility
+        run: |
+          if git rev-parse --verify --quiet '5.0.0^{commit}' >/dev/null; then
+            composer bc-check
+          else
+            echo 'Skipping compatibility check until the 5.0.0 baseline is tagged.'
+          fi
+
+      - name: Audit dependencies
+        run: composer audit

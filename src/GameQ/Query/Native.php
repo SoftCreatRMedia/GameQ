@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -19,6 +20,8 @@
 namespace GameQ\Query;
 
 use GameQ\Exception\QueryException;
+use GameQ\Protocol;
+use Throwable;
 
 /**
  * Native way of querying servers
@@ -27,18 +30,25 @@ use GameQ\Exception\QueryException;
  */
 class Native extends Core
 {
+    private const MAX_RESPONSE_BYTES_PER_SOCKET = 16 * 1024 * 1024;
+
+    private const MAX_RESPONSE_PACKETS_PER_SOCKET = 1024;
+
     /**
      * Get the current socket or create one and return
      *
-     * @return mixed
+     * @return resource
      * @throws QueryException
      */
     public function get(): mixed
     {
-
         // No socket for this server, make one
-        if (is_null($this->socket)) {
+        if (!is_resource($this->socket)) {
             $this->create();
+        }
+
+        if (!is_resource($this->socket)) {
+            throw new QueryException('The query socket could not be created.');
         }
 
         return $this->socket;
@@ -47,24 +57,34 @@ class Native extends Core
     /**
      * Write data to the socket
      *
-     * @param string|array $data
+     * @param string|list<string> $data
      *
      * @return int The number of bytes written
      * @throws QueryException
      */
     public function write(string|array $data): int
     {
-
         try {
             // No socket for this server, make one
-            if (is_null($this->socket)) {
-                $this->create();
-            }
+            $socket = $this->get();
+            $payload = is_array($data) ? implode('', $data) : $data;
 
             // Send the packet
-            return fwrite($this->socket, $data);
-        } catch (\Exception $exception) {
-            throw new QueryException($exception->getMessage(), $exception->getCode(), $exception);
+            // Socket failures are reported through the return value. Suppress the
+            // accompanying warning so callers consistently receive QueryException.
+            $bytesWritten = @fwrite($socket, $payload);
+
+            if ($bytesWritten === false) {
+                throw new QueryException('Unable to write the query packet to the socket.');
+            }
+
+            return $bytesWritten;
+        } catch (Throwable $exception) {
+            if ($exception instanceof QueryException) {
+                throw $exception;
+            }
+
+            throw new QueryException($exception->getMessage(), (int) $exception->getCode(), $exception);
         }
     }
 
@@ -73,8 +93,7 @@ class Native extends Core
      */
     public function close(): void
     {
-
-        if ($this->socket) {
+        if (is_resource($this->socket)) {
             fclose($this->socket);
             $this->socket = null;
         }
@@ -87,8 +106,11 @@ class Native extends Core
      */
     protected function create(): void
     {
-
         // Create the remote address
+        if ($this->transport === null || $this->ip === null || $this->port === null) {
+            throw new QueryException('Connection information must be set before creating a socket.');
+        }
+
         $remote_addr = sprintf("%s://%s:%d", $this->transport, $this->ip, $this->port);
 
         // Create context
@@ -99,14 +121,22 @@ class Native extends Core
         ]);
 
         // Define these first
-        $errno = null;
-        $errstr = null;
+        $errno = 0;
+        $errstr = '';
 
         // Create the socket
-        if (($this->socket =
-                @stream_socket_client($remote_addr, $errno, $errstr, $this->timeout, STREAM_CLIENT_CONNECT, $context))
-            !== false
-        ) {
+        $socket = @stream_socket_client(
+            $remote_addr,
+            $errno,
+            $errstr,
+            $this->timeout,
+            STREAM_CLIENT_CONNECT,
+            $context,
+        );
+
+        if ($socket !== false) {
+            $this->socket = $socket;
+
             // Set the read timeout on the streams
             stream_set_timeout($this->socket, $this->timeout);
 
@@ -123,15 +153,24 @@ class Native extends Core
             $this->socket = null;
 
             // Something bad happened, throw query exception
+            $errorCode = $errno ?? 0;
+
             throw new QueryException(
                 __METHOD__ . " - Error creating socket to server $this->ip:$this->port. Error: " . $errstr,
-                $errno
+                $errorCode,
             );
         }
     }
 
     /**
      * Pull the responses out of the stream
+     *
+     * @param array<int, array{server_id: string, socket: Core}> $sockets
+     * @param int $timeout
+     * @param int $stream_timeout
+     * @return array<int, list<string>>
+     *
+     * @throws QueryException
      */
     public function getResponses(array $sockets, int $timeout, int $stream_timeout): array
     {
@@ -141,14 +180,28 @@ class Native extends Core
         // To store the sockets
         $sockets_tmp = [];
 
+        // Track sockets that have returned data so completed datagram queries can stop after one idle interval while
+        // stream queries remain open long enough to receive delayed chunks.
+        $respondedSockets = [];
+        $streamSockets = [];
+        $streamWaitsForEof = [];
+        $streamExpectedBytes = [];
+        $idleIntervals = [];
+        $responseBytes = [];
+        $responsePackets = [];
+
         // Loop and pull out all the actual sockets we need to listen on
         foreach ($sockets as $socket_id => $socket_data) {
             // Get the socket
-            /* @var $socket Core */
             $socket = $socket_data['socket'];
 
             // Append the actual socket we are listening to
             $sockets_tmp[$socket_id] = $socket->get();
+            $streamSockets[$socket_id] = in_array(
+                $socket->getTransport(),
+                [Protocol::TRANSPORT_TCP, Protocol::TRANSPORT_SSL, Protocol::TRANSPORT_TLS],
+                true,
+            );
 
             unset($socket);
         }
@@ -159,7 +212,7 @@ class Native extends Core
         $except = null;
 
         // Check to see if $read is empty, if so stream_select() will throw a warning
-        if (empty($read)) {
+        if ($read === []) {
             return $responses;
         }
 
@@ -169,36 +222,121 @@ class Native extends Core
         // Let's loop until we break something.
         while (microtime(true) < $time_stop) {
             // Check to make sure $read is not empty, if so we are done
-            if (empty($read)) {
+            if ($read === []) {
                 break;
             }
 
             // Now lets listen for some streams, but do not cross the streams!
             $streams = stream_select($read, $write, $except, 0, $stream_timeout);
 
-            // We had error or no streams left, kill the loop
-            if ($streams === false || ($streams <= 0)) {
+            // A select error is fatal for this read round.
+            if ($streams === false) {
                 break;
+            }
+
+            // A short select interval without data is not the overall query timeout.
+            if ($streams === 0) {
+                $streamIdleLimit = max(1, (int) ceil(1_000_000 / max(1, $stream_timeout)));
+                $overallIdleLimit = max(1, (int) ceil(($timeout * 1_000_000) / max(1, $stream_timeout)));
+
+                foreach ($respondedSockets as $socketId => $_) {
+                    if (!array_key_exists($socketId, $sockets_tmp)) {
+                        continue;
+                    }
+
+                    $idleIntervals[$socketId] = ($idleIntervals[$socketId] ?? 0) + 1;
+                    $idleLimit = match (true) {
+                        $streamWaitsForEof[$socketId] ?? false => $overallIdleLimit,
+                        $streamSockets[$socketId] ?? false => $streamIdleLimit,
+                        default => 1,
+                    };
+
+                    if ($idleIntervals[$socketId] >= $idleLimit) {
+                        unset($sockets_tmp[$socketId]);
+                    }
+                }
+
+                if ($sockets_tmp === []) {
+                    break;
+                }
+
+                $read = $sockets_tmp;
+
+                continue;
             }
 
             // Loop the sockets that received data back
             foreach ($read as $socket) {
                 /* @var $socket resource */
+                $socketId = (int) $socket;
+                $metadata = stream_get_meta_data($socket);
+                $drainAvailable = $metadata['blocked'] === false;
 
-                // See if we have a response
-                if (($response = fread($socket, 32768)) === false) {
-                    continue; // No response yet so lets continue.
+                // TLS streams can buffer several decrypted records after the underlying socket becomes readable.
+                // Drain everything currently available before waiting in stream_select() again.
+                while (true) {
+                    $response = fread($socket, 32768);
+
+                    if ($response === false) {
+                        break;
+                    }
+
+                    if ($response === '') {
+                        if (feof($socket)) {
+                            unset($sockets_tmp[$socketId]);
+                        }
+
+                        break;
+                    }
+
+                    $nextByteCount = ($responseBytes[$socketId] ?? 0) + strlen($response);
+                    $nextPacketCount = ($responsePackets[$socketId] ?? 0) + 1;
+
+                    if (
+                        $nextByteCount > self::MAX_RESPONSE_BYTES_PER_SOCKET
+                        || $nextPacketCount > self::MAX_RESPONSE_PACKETS_PER_SOCKET
+                    ) {
+                        // Never pass a truncated response to a protocol parser.
+                        unset($responses[$socketId], $sockets_tmp[$socketId]);
+
+                        break;
+                    }
+
+                    // Add the response we got back
+                    $responses[$socketId][] = $response;
+                    $respondedSockets[$socketId] = true;
+                    $idleIntervals[$socketId] = 0;
+                    $responseBytes[$socketId] = $nextByteCount;
+                    $responsePackets[$socketId] = $nextPacketCount;
+
+                    if (($streamSockets[$socketId] ?? false) && !array_key_exists($socketId, $streamWaitsForEof)) {
+                        $responseStart = implode('', $responses[$socketId]);
+                        $headerEnd = strpos($responseStart, "\r\n\r\n");
+
+                        if ($headerEnd !== false && str_starts_with($responseStart, 'HTTP/')) {
+                            $headers = substr($responseStart, 0, $headerEnd);
+                            $streamWaitsForEof[$socketId] = str_starts_with($headers, 'HTTP/1.0')
+                                || preg_match('/^Connection:\s*close\s*$/mi', $headers) === 1;
+
+                            if (preg_match('/^Content-Length:\s*(\d+)\s*$/mi', $headers, $matches) === 1) {
+                                $streamExpectedBytes[$socketId] = $headerEnd + 4 + (int) $matches[1];
+                            }
+                        }
+                    }
+
+                    if (
+                        isset($streamExpectedBytes[$socketId])
+                        && $nextByteCount >= $streamExpectedBytes[$socketId]
+                    ) {
+                        unset($sockets_tmp[$socketId]);
+
+                        break;
+                    }
+
+                    if (!$drainAvailable) {
+                        break;
+                    }
                 }
-
-                // Check to see if the response is empty, if so we are done with this server
-                if ($response === '') {
-                    // Remove this server from any future read loops
-                    unset($sockets_tmp[(int)$socket]);
-                    continue;
-                }
-
-                // Add the response we got back
-                $responses[(int)$socket][] = $response;
             }
 
             // Because stream_select modifies read we need to reset it each time to the original array of sockets
@@ -206,9 +344,26 @@ class Native extends Core
         }
 
         // Free up some memory
-        unset($streams, $read, $write, $except, $sockets_tmp, $time_stop, $response);
+        unset(
+            $streams,
+            $read,
+            $write,
+            $except,
+            $sockets_tmp,
+            $respondedSockets,
+            $streamSockets,
+            $streamWaitsForEof,
+            $streamExpectedBytes,
+            $idleIntervals,
+            $responseBytes,
+            $responsePackets,
+            $time_stop,
+            $response,
+            $metadata,
+            $drainAvailable,
+        );
 
-        // Return all of the responses, may be empty if something went wrong
+        // Return all the responses, may be empty if something went wrong
         return $responses;
     }
 }

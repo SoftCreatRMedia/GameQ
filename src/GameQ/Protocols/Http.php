@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,6 +19,7 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
 
 /**
@@ -54,4 +56,40 @@ abstract class Http extends Protocol
      * The client join link
      */
     protected ?string $join_link = null;
+
+    /**
+     * Extract a complete response body while accepting raw fixture bodies used by legacy protocols.
+     *
+     * @throws ProtocolException
+     */
+    protected function extractHttpBody(string $response, string $context = 'Server'): string
+    {
+        if (!str_starts_with($response, 'HTTP/')) {
+            return trim($response);
+        }
+
+        if (preg_match('/\AHTTP\/\d(?:\.\d)?\s+(\d{3})\b/', $response, $matches) !== 1) {
+            throw new ProtocolException("HTTP response from $context has an invalid status line.");
+        }
+
+        $status = (int) $matches[1];
+
+        if ($status < 200 || $status >= 300) {
+            throw new ProtocolException("$context returned HTTP status $status.");
+        }
+
+        $headerEnd = strpos($response, "\r\n\r\n");
+        $separatorLength = 4;
+
+        if ($headerEnd === false) {
+            $headerEnd = strpos($response, "\n\n");
+            $separatorLength = 2;
+        }
+
+        if ($headerEnd === false) {
+            throw new ProtocolException("HTTP response from $context has no header terminator.");
+        }
+
+        return trim(substr($response, $headerEnd + $separatorLength));
+    }
 }

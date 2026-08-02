@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,9 +19,9 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
 use GameQ\Result;
-use GameQ\Exception\ProtocolException;
 use JsonException;
 
 /**
@@ -33,7 +34,6 @@ use JsonException;
  */
 class Mumble extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -44,7 +44,7 @@ class Mumble extends Protocol
 
     /**
      * The transport mode for this protocol is TCP
-      */
+     */
     protected string $transport = self::TRANSPORT_TCP;
 
     /**
@@ -100,16 +100,16 @@ class Mumble extends Protocol
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException|JsonException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         $data = json_decode(
             implode('', $this->packets_response),
             true,
             512,
-            JSON_THROW_ON_ERROR
+            JSON_THROW_ON_ERROR,
         );
 
         if (!is_array($data)) {
@@ -124,22 +124,30 @@ class Mumble extends Protocol
 
         // Let's iterate over the response items, there are a lot
         foreach ($data as $key => $value) {
-            // Ignore root for now, that is where all of the channel/player info is housed
+            // The root entry is parsed recursively below into channels and players
             if ($key === 'root') {
                 continue;
             }
 
             // Add them as is
-            $result->add($key, $value);
+            if (is_string($key)) {
+                $result->add($key, $value);
+            }
         }
 
         // Offload the channel and user parsing
-        $this->processChannelsAndUsers($data['root'], $result);
+        $root = $this->normalizeStringKeyedArray($data['root'] ?? null);
+
+        if ($root === []) {
+            throw new ProtocolException("Mumble response does not contain a valid 'root' channel.");
+        }
+        $this->processChannelsAndUsers($root, $result);
 
         unset($data);
 
         // Manually set the number of players
-        $result->add('numplayers', count($result->get('players')));
+        $players = $result->get('players');
+        $result->add('numplayers', is_array($players) ? count($players) : 0);
 
         return $result->fetch();
     }
@@ -149,14 +157,16 @@ class Mumble extends Protocol
      */
 
     /**
-     * Handles processing the the channels and user info
+     * Handles processing the channels and user info
+     *
+     * @param array<string, mixed> $data
      */
     protected function processChannelsAndUsers(array $data, Result $result): void
     {
-        // Let's add all of the channel information
+        // Let's add all the channel information
         foreach ($data as $key => $value) {
             // We will handle these later
-            if (in_array($key, ['channels', 'users'])) {
+            if (in_array($key, ['channels', 'users'], true)) {
                 // skip
                 continue;
             }
@@ -165,16 +175,37 @@ class Mumble extends Protocol
             $result->addTeam($key, $value);
         }
 
-        // Itereate over the users in this channel
-        foreach ($data['users'] as $user) {
+        // Iterate over the users in this channel
+        $users = $data['users'] ?? [];
+
+        if (!is_array($users)) {
+            $users = [];
+        }
+
+        foreach ($users as $user) {
+            if (!is_array($user)) {
+                continue;
+            }
+
             foreach ($user as $key => $value) {
-                $result->addPlayer($key, $value);
+                if (is_string($key)) {
+                    $result->addPlayer($key, $value);
+                }
             }
         }
 
         // Offload more channels to parse
-        foreach ($data['channels'] as $channel) {
-            $this->processChannelsAndUsers($channel, $result);
+        $channels = $data['channels'] ?? [];
+
+        if (!is_array($channels)) {
+            return;
+        }
+
+        foreach ($channels as $channel) {
+            if (is_array($channel)) {
+                $normalizedChannel = array_filter($channel, is_string(...), ARRAY_FILTER_USE_KEY);
+                $this->processChannelsAndUsers($normalizedChannel, $result);
+            }
         }
     }
 }

@@ -20,6 +20,7 @@
 namespace GameQ\Protocols;
 
 use GameQ\Exception\ProtocolException;
+use JsonException;
 
 /**
  * GTA Five M Protocol Class
@@ -63,24 +64,37 @@ class Cfxplayers extends Http
      *
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Make sure we have any players
-        if (empty($this->packets_response)) {
+        if ($this->packets_response === []) {
             return [];
         }
 
-        // Implode and rip out the JSON
-        preg_match('/\{(.*)\}/ms', implode('', $this->packets_response), $matches);
+        $response = $this->extractHttpBody(implode('', $this->packets_response), 'Cfx');
 
-        // Return should be JSON, let's validate
-        if (!isset($matches[0]) || ($json = json_decode($matches[0], true)) === null) {
-            throw new ProtocolException(__METHOD__ . " JSON response from Stationeers protocol is invalid.");
+        try {
+            $json = json_decode(trim($response), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new ProtocolException(__METHOD__ . ' JSON player response from Cfx is invalid.', 0, $exception);
         }
 
-        // Return json as it should already be well formed
+        if (!is_array($json) || !array_is_list($json)) {
+            throw new ProtocolException(__METHOD__ . ' JSON player response from Cfx must be a list.');
+        }
+
+        $players = [];
+
+        foreach ($json as $player) {
+            $normalizedPlayer = $this->normalizeStringKeyedArray($player);
+
+            if ($normalizedPlayer !== []) {
+                $players[] = $normalizedPlayer;
+            }
+        }
+
         return [
-            'players' => $json,
+            'players' => $players,
         ];
     }
 }

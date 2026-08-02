@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -26,24 +27,54 @@ namespace GameQ\Tests\Protocols;
 class Cod extends Base
 {
     /**
+     * Test the normalization shared by Call of Duty protocols
+     */
+    public function testCallOfDutyNormalization(): void
+    {
+        $expected = [
+            'general' => [
+                'gametype' => 'g_gametype',
+                'hostname' => 'sv_hostname',
+                'mapname' => 'mapname',
+                'maxplayers' => 'sv_maxclients',
+                'mod' => '_Mod',
+                'numplayers' => 'clients',
+                'password' => ['g_needpass', 'pswrd'],
+            ],
+            'player' => [
+                'name' => 'name',
+                'ping' => 'ping',
+                'score' => 'frags',
+            ],
+        ];
+
+        foreach (['Cod', 'Coduo', 'Cod2', 'Cod4', 'Codwaw'] as $protocolName) {
+            $className = 'GameQ\\Protocols\\' . $protocolName;
+            $protocol = new $className();
+
+            self::assertSame($expected, $protocol->getNormalize());
+        }
+    }
+
+    /**
      * Test responses for Call of Duty
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'cod',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

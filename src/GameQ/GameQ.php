@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -20,9 +21,13 @@ namespace GameQ;
 
 use GameQ\Exception\ProtocolException;
 use GameQ\Exception\QueryException;
+use GameQ\Exception\ServerException;
 use GameQ\Filters\Base;
 use GameQ\Query\Core;
 use GameQ\Query\Native;
+use InvalidArgumentException;
+use JsonException;
+use LogicException;
 
 /**
  * Base GameQ Class
@@ -30,9 +35,7 @@ use GameQ\Query\Native;
  * This class should be the only one that is included when you use GameQ to query
  * any games servers.
  *
- * Requirements: See wiki or README for more information on the requirements
- *  - PHP 5.4.14+
- *    * Bzip2 - http://www.php.net/manual/en/book.bzip2.php
+ * Requirements: See README for the current PHP and extension requirements.
  *
  * @author Austin Bischoff <austin@codebeard.com>
  *
@@ -41,13 +44,15 @@ use GameQ\Query\Native;
  * @property int         $stream_timeout
  * @property int         $timeout
  * @property int         $write_wait
+ * @property int         $max_follow_up_rounds
+ * @property int         $max_servers_per_batch
  */
 class GameQ
 {
     /**
      * Holds the instance of itself
      *
-     * @type self
+     * @var self
      */
     protected static GameQ $instance;
 
@@ -65,6 +70,8 @@ class GameQ
 
     /**
      * Default options
+     *
+     * @var array<string, mixed>
      */
     protected array $options = [
         'debug'                => false,
@@ -78,8 +85,9 @@ class GameQ
         ],
         // Advanced settings
         'stream_timeout'       => 200000, // See http://www.php.net/manual/en/function.stream-select.php for more info
-        'write_wait'           => 500,
         // How long (in micro-seconds) to pause between writing to server sockets, helps cpu usage
+        'write_wait'           => 500,
+        'max_servers_per_batch' => 50,
 
         // Used for generating protocol test data
         'capture_packets_file' => null,
@@ -88,12 +96,14 @@ class GameQ
     /**
      * Array of servers being queried
      *
-     * @var Server[] $servers
+     * @var array<string, Server>
      */
     protected array $servers = [];
 
     /**
      * The query library to use.  Default is Native
+     *
+     * @var class-string<Core>
      */
     protected string $queryLibrary = Native::class;
 
@@ -104,12 +114,9 @@ class GameQ
 
     /**
      * Get an option's value
-     *
-     * @return mixed|null
      */
-    public function __get(string $option)
+    public function __get(string $option): mixed
     {
-
         return $this->options[$option] ?? null;
     }
 
@@ -121,16 +128,25 @@ class GameQ
         $this->options[$option] = $value;
     }
 
-    public function __isset(string $option)
+    /**
+     * Determine whether an option has been configured.
+     */
+    public function __isset(string $option): bool
     {
         return isset($this->options[$option]);
     }
 
+    /**
+     * @return array<string, Server>
+     */
     public function getServers(): array
     {
         return $this->servers;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getOptions(): array
     {
         return $this->options;
@@ -141,13 +157,17 @@ class GameQ
      */
     public function setOption(string $var, mixed $value): self
     {
-        $this->{$var} = $value;
+        $this->__set($var, $value);
 
         return $this;
     }
 
     /**
      * Add a single server
+     *
+     * @param array<string, mixed> $server_info
+     *
+     * @throws ServerException
      */
     public function addServer(array $server_info = []): self
     {
@@ -159,10 +179,13 @@ class GameQ
 
     /**
      * Add multiple servers in a single call
+     *
+     * @param array<array-key, array<string, mixed>> $servers
+     *
+     * @throws ServerException
      */
     public function addServers(array $servers = []): self
     {
-
         // Loop through all the servers and add them
         foreach ($servers as $server_info) {
             $this->addServer($server_info);
@@ -176,7 +199,9 @@ class GameQ
      * Supported formats:
      * JSON
      *
-     * @throws \Exception
+     * @param string|list<string> $files
+     *
+     * @throws ServerException
      */
     public function addServersFromFiles(string|array $files = []): self
     {
@@ -193,15 +218,34 @@ class GameQ
             }
 
             // See if this file is JSON
-            if (($servers = json_decode(file_get_contents($file), true)) === null
-                && json_last_error() !== JSON_ERROR_NONE
-            ) {
-                // Type not supported
+            $contents = file_get_contents($file);
+
+            if ($contents === false) {
                 continue;
             }
 
+            try {
+                $servers = json_decode($contents, true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException) {
+                continue;
+            }
+
+            if (!is_array($servers)) {
+                continue;
+            }
+
+            $validServers = [];
+
+            foreach ($servers as $serverInfo) {
+                if (is_array($serverInfo)) {
+                    $validServer = array_filter($serverInfo, is_string(...), ARRAY_FILTER_USE_KEY);
+
+                    $validServers[] = $validServer;
+                }
+            }
+
             // Add this list of servers
-            $this->addServers($servers);
+            $this->addServers($validServers);
         }
 
         return $this;
@@ -219,17 +263,28 @@ class GameQ
 
     /**
      * Add a filter to the processing list
+     *
+     * @param array<string, mixed> $options
+     * @throws InvalidArgumentException
      */
     public function addFilter(string $filterName, array $options = []): self
     {
         // Create the filter hash so we can run multiple versions of the same filter
-        $filterHash = sprintf('%s_%s', strtolower($filterName), md5(json_encode($options)));
+        try {
+            $encodedOptions = json_encode($options, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new InvalidArgumentException('Filter options must be JSON-serializable.', 0, $exception);
+        }
+
+        $filterHash = sprintf('%s_%s', strtolower($filterName), md5($encodedOptions));
 
         // Add the filter
-        $this->options['filters'][$filterHash] = [
+        $filters = $this->listFilters();
+        $filters[$filterHash] = [
             'filter'  => strtolower($filterName),
             'options' => $options,
         ];
+        $this->options['filters'] = $filters;
 
         unset($filterHash);
 
@@ -245,8 +300,11 @@ class GameQ
         $filterHash = strtolower($filterHash);
 
         // Remove this filter if it has been defined
-        if (array_key_exists($filterHash, $this->options['filters'])) {
-            unset($this->options['filters'][$filterHash]);
+        $filters = $this->listFilters();
+
+        if (array_key_exists($filterHash, $filters)) {
+            unset($filters[$filterHash]);
+            $this->options['filters'] = $filters;
         }
 
         return $this;
@@ -254,98 +312,146 @@ class GameQ
 
     /**
      * Return the list of applied filters
+     *
+     * @return array<string, array{filter: string, options: array<string, mixed>}>
      */
     public function listFilters(): array
     {
-        return $this->options['filters'];
+        $filters = $this->options['filters'] ?? null;
+
+        if (!is_array($filters)) {
+            return [];
+        }
+
+        $validFilters = [];
+
+        foreach ($filters as $hash => $filter) {
+            if (
+                is_string($hash)
+                && is_array($filter)
+                && isset($filter['filter'], $filter['options'])
+                && is_string($filter['filter'])
+                && is_array($filter['options'])
+            ) {
+                $validOptions = array_filter($filter['options'], is_string(...), ARRAY_FILTER_USE_KEY);
+
+                $validFilters[$hash] = [
+                    'filter' => $filter['filter'],
+                    'options' => $validOptions,
+                ];
+            }
+        }
+
+        return $validFilters;
     }
 
     /**
      * Main method used to actually process all the added servers and return the information
      *
+     * @return array<string, array<string, mixed>>
+     * @throws InvalidArgumentException
+     * @throws LogicException
      * @throws QueryException
      * @throws ProtocolException
      */
     public function process(): array
     {
-        // Initialize the query library we are using
-        $class = new \ReflectionClass($this->queryLibrary);
-
-        // Set the query pointer to the new instance of the library
-        $this->query = $class->newInstance();
-
-        unset($class);
+        $queryLibrary = $this->queryLibrary;
+        $this->query = new $queryLibrary();
 
         // Define the return
         $results = [];
 
-        // @todo: Add break up into loop to split large arrays into smaller chunks
+        $servers = $this->servers;
+        $batchSize = max(1, $this->getIntegerOption('max_servers_per_batch', 50));
 
-        // Do server challenge(s) first, if any
-        $this->doChallenges();
+        try {
+            foreach (array_chunk($servers, $batchSize, true) as $batch) {
+                $this->servers = $batch;
 
-        // Do packets for server(s) and get query responses
-        $this->doQueries();
+                // Do server challenge(s) first, if any
+                $this->doChallenges();
 
-        // Now we should have some information to process for each server
-        foreach ($this->servers as $server) {
-            // Parse the responses for this server
-            $result = $this->doParseResponse($server);
+                // Do packets for server(s) and get query responses
+                $this->doQueries();
 
-            // Apply the filters
-            $result = array_merge($result, $this->doApplyFilters($result, $server));
+                // Now we should have some information to process for each server
+                foreach ($batch as $server) {
+                    // Parse the responses for this server
+                    $result = $this->doParseResponse($server);
 
-            // Sort the keys so they are alphabetical and nicer to look at
-            ksort($result);
+                    // Apply the filters
+                    foreach ($this->doApplyFilters($result, $server) as $key => $value) {
+                        $result[$key] = $value;
+                    }
 
-            // Add the result to the results array
-            $results[$server->id()] = $result;
+                    // Sort the keys so they are alphabetical and nicer to look at
+                    ksort($result);
+
+                    // Add the result to the results array
+                    $results[$server->id()] = $result;
+                }
+            }
+        } finally {
+            $this->servers = $servers;
         }
 
         return $results;
     }
 
     /**
-     * Do server challenges, where required
+     * Do server challenge, where required
+     *
+     * @throws QueryException
+     * @throws ProtocolException
+     * @throws InvalidArgumentException
+     * @throws LogicException
      */
     protected function doChallenges(): void
     {
+        $query = $this->getQuery();
+
         // Initialize the sockets for reading
         $sockets = [];
 
-        // By default we don't have any challenges to process
+        // By default, we don't have any challenges to process
         $server_challenge = false;
 
         // Do challenge packets
         foreach ($this->servers as $server_id => $server) {
             // This protocol has a challenge packet that needs to be sent
-            if ($server->protocol()->hasChallenge()) {
+            if ($server->protocolInstance()->hasChallenge()) {
                 // We have a challenge, set the flag
                 $server_challenge = true;
 
                 // Let's make a clone of the query class
-                $socket = clone $this->query;
+                $socket = clone $query;
 
                 // Set the information for this query socket
                 $socket->set(
-                    $server->protocol()->transport(),
-                    $server->ip,
-                    $server->port_query,
-                    $this->timeout
+                    $server->protocolInstance()->transport(),
+                    $server->ip(),
+                    $server->portQuery(),
+                    $this->getIntegerOption('timeout', 3),
                 );
 
                 try {
                     // Now write the challenge packet to the socket.
-                    $socket->write($server->protocol()->getPacket(Protocol::PACKET_CHALLENGE));
+                    $challengePacket = $server->protocolInstance()->getPacket(Protocol::PACKET_CHALLENGE);
+
+                    if (!is_string($challengePacket)) {
+                        throw new ProtocolException('The challenge packet must be a string.');
+                    }
+                    $socket->write($challengePacket);
 
                     // Add the socket information so we can reference it easily
-                    $sockets[(int)$socket->get()] = [
+                    $sockets[(int) $socket->get()] = [
                         'server_id' => $server_id,
                         'socket'    => $socket,
                     ];
                 } catch (QueryException $exception) {
                     // Check to see if we are in debug, if so bubble up the exception
-                    if ($this->debug) {
+                    if ($this->isDebugEnabled()) {
                         throw $exception;
                     }
                 }
@@ -353,18 +459,17 @@ class GameQ
                 unset($socket);
 
                 // Let's sleep shortly so we are not hammering out calls rapid fire style hogging cpu
-                usleep($this->write_wait);
+                usleep($this->getIntegerOption('write_wait', 500));
             }
         }
 
         // We have at least one server with a challenge, we need to listen for responses
         if ($server_challenge) {
             // Now we need to listen for and grab challenge response(s)
-            $responses = call_user_func(
-                [$this->query, 'getResponses'],
+            $responses = $query->getResponses(
                 $sockets,
-                $this->timeout,
-                $this->stream_timeout
+                $this->getIntegerOption('timeout', 3),
+                $this->getIntegerOption('stream_timeout', 200000),
             );
 
             // Iterate over the challenge responses
@@ -379,7 +484,7 @@ class GameQ
                 $server = $this->servers[$server_id];
 
                 // Apply the challenge
-                $server->protocol()->challengeParseAndApply($challenge);
+                $server->protocolInstance()->challengeParseAndApply($challenge);
 
                 // Add this socket to be reused, has to be reused in GameSpy3 for example
                 $server->socketAdd($sockets[$socket_id]['socket']);
@@ -387,14 +492,28 @@ class GameQ
                 // Clear
                 unset($server);
             }
+
+            // Challenge sockets with no response cannot be reused by the actual query.
+            foreach ($sockets as $socketId => $socketInfo) {
+                if (!array_key_exists($socketId, $responses)) {
+                    $socketInfo['socket']->close();
+                }
+            }
         }
     }
 
     /**
      * Run the actual queries and get the response(s)
+     *
+     * @throws ProtocolException
+     * @throws QueryException
+     * @throws InvalidArgumentException
+     * @throws LogicException
      */
     protected function doQueries(): void
     {
+        $query = $this->getQuery();
+
         // Initialize the array of sockets
         $sockets = [];
 
@@ -403,12 +522,16 @@ class GameQ
             /* @var $server Server */
 
             // Invoke the beforeSend method
-            $server->protocol()->beforeSend($server);
+            $server->protocolInstance()->beforeSend($server);
 
             // Get all the non-challenge packets we need to send
-            $packets = $server->protocol()->getPacket('!' . Protocol::PACKET_CHALLENGE);
+            $packets = $server->protocolInstance()->getPacket('!' . Protocol::PACKET_CHALLENGE);
 
-            if (count($packets) === 0) {
+            if (!is_array($packets)) {
+                $packets = [$packets];
+            }
+
+            if ($packets === []) {
                 // Skip nothing else to do for some reason.
                 continue;
             }
@@ -416,14 +539,14 @@ class GameQ
             // Try to use an existing socket
             if (($socket = $server->socketGet()) === null) {
                 // Let's make a clone of the query class
-                $socket = clone $this->query;
+                $socket = clone $query;
 
                 // Set the information for this query socket
                 $socket->set(
-                    $server->protocol()->transport(),
-                    $server->ip,
-                    $server->port_query,
-                    $this->timeout
+                    $server->protocolInstance()->transport(),
+                    $server->ip(),
+                    $server->portQuery(),
+                    $this->getIntegerOption('timeout', 3),
                 );
             }
 
@@ -434,19 +557,19 @@ class GameQ
                     $socket->write($packet_data);
 
                     // Let's sleep shortly so we are not hammering out calls rapid fire style
-                    usleep($this->write_wait);
+                    usleep($this->getIntegerOption('write_wait', 500));
                 }
 
                 unset($packets);
 
                 // Add the socket information so we can reference it easily
-                $sockets[(int)$socket->get()] = [
+                $sockets[(int) $socket->get()] = [
                     'server_id' => $server_id,
                     'socket'    => $socket,
                 ];
             } catch (QueryException $exception) {
                 // Check to see if we are in debug, if so bubble up the exception
-                if ($this->debug) {
+                if ($this->isDebugEnabled()) {
                     throw $exception;
                 }
 
@@ -458,11 +581,10 @@ class GameQ
         }
 
         // Now we need to listen for and grab response(s)
-        $responses = call_user_func(
-            [$this->query, 'getResponses'],
+        $responses = $query->getResponses(
             $sockets,
-            $this->timeout,
-            $this->stream_timeout
+            $this->getIntegerOption('timeout', 3),
+            $this->getIntegerOption('stream_timeout', 200000),
         );
 
         // Iterate over the responses
@@ -474,10 +596,12 @@ class GameQ
             $server = $this->servers[$server_id];
 
             // Save the response from this packet
-            $server->protocol()->packetResponse($response);
+            $server->protocolInstance()->packetResponse($response);
 
             unset($server);
         }
+
+        $this->doFollowUpQueries($query, $sockets);
 
         // Now we need to close all the sockets
         foreach ($sockets as $socketInfo) {
@@ -494,29 +618,105 @@ class GameQ
     }
 
     /**
+     * Allow protocols to request response-driven follow-up packets, such as paginated results.
+     *
+     * @param array<int, array{server_id: string, socket: Core}> $sockets
+     * @throws InvalidArgumentException
+     * @throws LogicException
+     * @throws QueryException
+     */
+    private function doFollowUpQueries(Core $query, array $sockets): void
+    {
+        $maxRounds = max(0, $this->getIntegerOption('max_follow_up_rounds', 64));
+
+        for ($round = 0; $round < $maxRounds; ++$round) {
+            $followUpSockets = [];
+
+            foreach ($sockets as $socketId => $socketInfo) {
+                $server = $this->servers[$socketInfo['server_id']] ?? null;
+
+                if ($server === null) {
+                    continue;
+                }
+
+                $packets = $server->protocolInstance()->getFollowUpPackets();
+
+                if ($packets === []) {
+                    continue;
+                }
+
+                try {
+                    foreach ($packets as $packet) {
+                        $socketInfo['socket']->write($packet);
+                        usleep($this->getIntegerOption('write_wait', 500));
+                    }
+                } catch (QueryException $exception) {
+                    if ($this->isDebugEnabled()) {
+                        throw $exception;
+                    }
+
+                    continue;
+                }
+
+                $followUpSockets[$socketId] = $socketInfo;
+            }
+
+            if ($followUpSockets === []) {
+                return;
+            }
+
+            $responses = $query->getResponses(
+                $followUpSockets,
+                $this->getIntegerOption('timeout', 3),
+                $this->getIntegerOption('stream_timeout', 200000),
+            );
+
+            if ($responses === []) {
+                return;
+            }
+
+            foreach ($responses as $socketId => $response) {
+                $socketInfo = $followUpSockets[$socketId] ?? null;
+
+                if ($socketInfo === null) {
+                    continue;
+                }
+
+                $server = $this->servers[$socketInfo['server_id']] ?? null;
+                $server?->protocolInstance()->appendPacketResponse($response);
+            }
+        }
+    }
+
+    /**
      * Parse the response for a specific server
      *
+     * @return array<string, mixed>
+     * @throws InvalidArgumentException
+     * @throws LogicException
      * @throws ProtocolException
      */
     protected function doParseResponse(Server $server): array
     {
         try {
             // We want to save this server's response to a file (useful for unit testing)
-            if (!is_null($this->capture_packets_file)) {
+            $captureFile = $this->getCapturePacketsFile();
+
+            if ($captureFile !== null) {
                 file_put_contents(
-                    $this->capture_packets_file,
-                    implode(PHP_EOL . '||' . PHP_EOL, $server->protocol()->packetResponse())
+                    $captureFile,
+                    implode(PHP_EOL . '||' . PHP_EOL, $server->protocolInstance()->packetResponse()),
                 );
             }
 
             // Get the server response
-            $results = $server->protocol()->processResponse();
+            $results = $server->protocolInstance()->processResponse();
 
             // Check for online before we do anything else
             $results['gq_online'] = (count($results) > 0);
         } catch (ProtocolException $exception) {
             // Check to see if we are in debug, if so bubble up the exception
-            if ($this->debug) {
+            if ($this->isDebugEnabled()) {
                 throw $exception;
             }
 
@@ -529,15 +729,15 @@ class GameQ
         // Now add some default stuff
         $results['gq_address'] = $results['gq_address'] ?? $server->ip();
         $results['gq_port_client'] = $server->portClient();
-        $results['gq_port_query'] = $results['gq_port_query'] ??
-            $server->portQuery();
-        $results['gq_protocol'] = $server->protocol()->getProtocol();
-        $results['gq_type'] = (string)$server->protocol();
-        $results['gq_name'] = $server->protocol()->nameLong();
-        $results['gq_transport'] = $server->protocol()->transport();
+        $results['gq_port_query'] = $results['gq_port_query']
+            ?? $server->portQuery();
+        $results['gq_protocol'] = $server->protocolInstance()->getProtocol();
+        $results['gq_type'] = (string) $server->protocolInstance();
+        $results['gq_name'] = $server->protocolInstance()->nameLong();
+        $results['gq_transport'] = $server->protocolInstance()->transport();
 
         // Process the join link
-        if (empty($results['gq_joinlink'])) {
+        if (!isset($results['gq_joinlink']) || $results['gq_joinlink'] === '') {
             $results['gq_joinlink'] = $server->getJoinLink() ?? '';
         }
 
@@ -546,30 +746,77 @@ class GameQ
 
     /**
      * Apply any filters to the results
+     *
+     * @param array<string, mixed> $results
+     * @return array<string, mixed>
      */
     protected function doApplyFilters(array $results, Server $server): array
     {
-
         // Loop over the filters
-        foreach ($this->options['filters'] as $filterOptions) {
-            // Try to do this filter
-            try {
-                // Make a new reflection class
-                $class = new \ReflectionClass(sprintf('GameQ\\Filters\\%s', ucfirst($filterOptions['filter'])));
+        foreach ($this->listFilters() as $filterOptions) {
+            $filterClass = sprintf('GameQ\\Filters\\%s', ucfirst($filterOptions['filter']));
 
-                // Create a new instance of the filter class specified
-                $filter = $class->newInstanceArgs([$filterOptions['options']]);
-
-                if ($filter instanceof Base) {
-                    // Apply the filter to the data
-                    $results = $filter->apply($results, $server);
-                }
-            } catch (\ReflectionException) {
-                // Invalid, skip it
+            if (!is_a($filterClass, Base::class, true)) {
                 continue;
             }
+
+            $filter = new $filterClass($filterOptions['options']);
+            $results = $filter->apply($results, $server);
         }
 
         return $results;
+    }
+
+    /**
+     * Return the initialized query implementation.
+     *
+     * @throws LogicException
+     */
+    private function getQuery(): Core
+    {
+        if ($this->query === null) {
+            throw new LogicException('The query implementation has not been initialized.');
+        }
+
+        return $this->query;
+    }
+
+    /**
+     * Read an integer option while keeping invalid user input away from socket APIs.
+     *
+     * @throws InvalidArgumentException
+     */
+    private function getIntegerOption(string $name, int $default): int
+    {
+        $value = $this->options[$name] ?? $default;
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_string($value) && is_numeric($value)) {
+            return (int) $value;
+        }
+
+        throw new InvalidArgumentException("The '$name' option must be an integer.");
+    }
+
+    private function isDebugEnabled(): bool
+    {
+        return ($this->options['debug'] ?? false) === true;
+    }
+
+    /**
+     * @throws InvalidArgumentException
+     */
+    private function getCapturePacketsFile(): ?string
+    {
+        $captureFile = $this->options['capture_packets_file'] ?? null;
+
+        if ($captureFile !== null && !is_string($captureFile)) {
+            throw new InvalidArgumentException("The 'capture_packets_file' option must be a string or null.");
+        }
+
+        return $captureFile;
     }
 }

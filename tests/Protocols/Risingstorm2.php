@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -28,16 +29,16 @@ class Risingstorm2 extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Risingstorm2
+     * @var \GameQ\Protocols\Risingstorm2
      */
-    protected $stub;
+    protected \GameQ\Protocols\Risingstorm2 $stub;
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Risingstorm2();
@@ -46,30 +47,30 @@ class Risingstorm2 extends Base
     /**
      * Test to make sure the query port has not changed.  Appears to be fixed at 27015 but unsure.
      */
-    public function testQueryPort()
+    public function testQueryPort(): void
     {
-        $this->assertEquals($this->stub->findQueryPort(7777), 27015);
+        self::assertSame(27015, $this->stub->findQueryPort(7777));
     }
 
     /**
      * Test responses for Medal of honor: Allied Assault
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'risingstorm2',
-            $responses
+            $responses,
         );
 
-        $this->assertEqualsDelta($result[$server], $testResult, 0.000000001);
+        self::assertEqualsDelta($result[$server], $testResult, 0.000000001);
     }
 }

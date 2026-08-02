@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -21,6 +22,8 @@
 namespace GameQ;
 
 use GameQ\Exception\ProtocolException;
+use ReflectionException;
+use ReflectionMethod;
 
 /**
  * Handles the core functionality for the protocols
@@ -29,7 +32,6 @@ use GameQ\Exception\ProtocolException;
  */
 abstract class Protocol
 {
-
     /**
      * Constants for class states
      */
@@ -89,27 +91,44 @@ abstract class Protocol
 
     /**
      * Holds the valid packet types this protocol has available.
+     *
+     * @var array<string, string>
      */
     protected array $packets = [];
 
     /**
+     * Original packet templates used when applying a new challenge.
+     *
+     * @var array<string, string>
+     */
+    private array $packet_templates = [];
+
+    /**
      * Holds the response headers and the method to use to process them.
+     *
+     * @var array<int|string, string>
      */
     protected array $responses = [];
 
     /**
      * Holds the list of methods to run when parsing the packet response(s) data. These
      * methods should provide all the return information.
+     *
+     * @var list<string>
      */
     protected array $process_methods = [];
 
     /**
      * The packet responses received
+     *
+     * @var list<string>
      */
     protected array $packets_response = [];
 
     /**
      * Options for this protocol
+     *
+     * @var array<string, mixed>
      */
     protected array $options = [];
 
@@ -119,9 +138,9 @@ abstract class Protocol
     protected int $state = self::STATE_STABLE;
 
     /**
-     * Holds specific normalize settings
+     * Fallback normalization map for protocol families that do not provide a more specific mapping.
      *
-     * @todo: Remove this ugly bulk by moving specific ones to their specific game(s)
+     * @var array<string, array<string, string|list<string>>>
      */
     protected array $normalize = [
         // General
@@ -163,11 +182,14 @@ abstract class Protocol
      */
     protected ?string $join_link = null;
 
+    /**
+     * @param array<string, mixed> $options
+     */
     public function __construct(array $options = [])
     {
-
         // Set the options for this specific instance of the class
         $this->options = $options;
+        $this->packet_templates = $this->packets;
     }
 
     /**
@@ -175,7 +197,6 @@ abstract class Protocol
      */
     public function __toString(): string
     {
-
         return $this->name;
     }
 
@@ -184,7 +205,6 @@ abstract class Protocol
      */
     public function portDiff(): int
     {
-
         return $this->port_diff;
     }
 
@@ -195,7 +215,6 @@ abstract class Protocol
      */
     public function findQueryPort(int $clientPort): int
     {
-
         return $clientPort + $this->port_diff;
     }
 
@@ -204,7 +223,6 @@ abstract class Protocol
      */
     public function joinLink(): ?string
     {
-
         return $this->join_link;
     }
 
@@ -213,7 +231,6 @@ abstract class Protocol
      */
     public function name(): string
     {
-
         return $this->name;
     }
 
@@ -222,7 +239,6 @@ abstract class Protocol
      */
     public function nameLong(): string
     {
-
         return $this->name_long;
     }
 
@@ -231,7 +247,6 @@ abstract class Protocol
      */
     public function state(): int
     {
-
         return $this->state;
     }
 
@@ -240,7 +255,6 @@ abstract class Protocol
      */
     public function getProtocol(): string
     {
-
         return $this->protocol;
     }
 
@@ -258,11 +272,13 @@ abstract class Protocol
 
     /**
      * Set the options for the protocol call
+     *
+     * @param array<string, mixed> $options
+     * @return array<string, mixed>
      */
     public function options(array $options = []): array
     {
-
-        if (!empty($options)) {
+        if ($options !== []) {
             $this->options = $options;
         }
 
@@ -276,13 +292,17 @@ abstract class Protocol
 
     /**
      * Return specific packet(s)
+     *
+     * @param list<string>|string $type
+     * @return array<string, string>|string
+     * @throws ProtocolException
      */
     public function getPacket(array|string $type = []): array|string
     {
         $packets = [];
 
         // We want an array of packets back
-        if (is_array($type) && !empty($type)) {
+        if (is_array($type) && $type !== []) {
             // Loop the packets
             foreach ($this->packets as $packet_type => $packet_data) {
                 // We want this packet
@@ -300,6 +320,10 @@ abstract class Protocol
             }
         } elseif (is_string($type)) {
             // Return specific packet type
+            if (!array_key_exists($type, $this->packets)) {
+                throw new ProtocolException("Unknown packet type '$type'.");
+            }
+
             $packets = $this->packets[$type];
         } else {
             // Return all packets
@@ -312,14 +336,41 @@ abstract class Protocol
 
     /**
      * Get/set the packet response
+     *
+     * @param list<string>|null $response
+     * @return list<string>
      */
     public function packetResponse(?array $response = null): array
     {
-        if (!empty($response)) {
+        if ($response !== null && $response !== []) {
             $this->packets_response = $response;
         }
 
         return $this->packets_response;
+    }
+
+    /**
+     * Append packets received during a follow-up query round.
+     *
+     * @param list<string> $response
+     */
+    public function appendPacketResponse(array $response): void
+    {
+        foreach ($response as $packet) {
+            $this->packets_response[] = $packet;
+        }
+    }
+
+    /**
+     * Return packets that must be sent after inspecting the responses received so far.
+     *
+     * Protocols can override this for pagination or other response-driven query flows.
+     *
+     * @return list<string>
+     */
+    public function getFollowUpPackets(): array
+    {
+        return [];
     }
 
 
@@ -332,7 +383,8 @@ abstract class Protocol
      */
     public function hasChallenge(): bool
     {
-        return (isset($this->packets[self::PACKET_CHALLENGE]) && !empty($this->packets[self::PACKET_CHALLENGE]));
+        return isset($this->packets[self::PACKET_CHALLENGE])
+            && $this->packets[self::PACKET_CHALLENGE] !== '';
     }
 
     /**
@@ -341,7 +393,6 @@ abstract class Protocol
      */
     public function challengeParseAndApply(Buffer $challenge_buffer): bool
     {
-
         return true;
     }
 
@@ -350,10 +401,8 @@ abstract class Protocol
      */
     protected function challengeApply(string $challenge_string): bool
     {
-
-        // Let's loop through all the packets and append the challenge where it is needed
-        foreach ($this->packets as $packet_type => $packet) {
-            $this->packets[$packet_type] = sprintf($packet, $challenge_string);
+        foreach ($this->packet_templates as $packet_type => $packet) {
+            $this->packets[$packet_type] = str_replace('%s', $challenge_string, $packet);
         }
 
         return true;
@@ -367,25 +416,30 @@ abstract class Protocol
      * See https://github.com/symfony/polyfill-php72/blob/bf44a9fd41feaac72b074de600314a93e2ae78e2/Php72.php#L24-L38
      *
      * @author Nicolas Grekas <p@tchwork.com>
-     * @author Dariusz Rumiński <dariusz.ruminski@gmail.com
+     * @author Dariusz Rumiński <dariusz.ruminski@gmail.com>
      */
     public function convertToUtf8(string $s): string
     {
         $s .= $s;
-        $len = \strlen($s);
+        $len = strlen($s);
 
-        for ($i = $len >> 1, $j = 0; $i < $len; ++$i, ++$j) {
+        $j = 0;
+
+        for ($i = $len >> 1; $i < $len; ++$i, ++$j) {
             switch (true) {
                 case $s[$i] < "\x80":
                     $s[$j] = $s[$i];
+
                     break;
                 case $s[$i] < "\xC0":
                     $s[$j] = "\xC2";
                     $s[++$j] = $s[$i];
+
                     break;
                 default:
                     $s[$j] = "\xC3";
-                    $s[++$j] = \chr(\ord($s[$i]) - 64);
+                    $s[++$j] = chr(ord($s[$i]) - 64);
+
                     break;
             }
         }
@@ -395,11 +449,81 @@ abstract class Protocol
 
     /**
      * Get the normalize settings for the protocol
+     *
+     * @return array<string, array<string, string|list<string>>>
      */
     public function getNormalize(): array
     {
-
         return $this->normalize;
+    }
+
+    /**
+     * Invoke a response handler declared by a protocol's response map.
+     *
+     * @return array<string, mixed>
+     * @throws ProtocolException
+     */
+    protected function processResponseMethod(string $methodName, Buffer $buffer): array
+    {
+        try {
+            $method = new ReflectionMethod($this, $methodName);
+            $result = $method->invoke($this, $buffer);
+        } catch (ReflectionException $exception) {
+            throw new ProtocolException("Unknown response handler '$methodName'.", 0, $exception);
+        }
+
+        if (!is_array($result)) {
+            throw new ProtocolException("Response handler '$methodName' did not return an array.");
+        }
+
+        $parsed = [];
+
+        foreach ($result as $key => $value) {
+            if (!is_string($key)) {
+                throw new ProtocolException("Response handler '$methodName' returned a non-string result key.");
+            }
+            $parsed[$key] = $value;
+        }
+
+        return $parsed;
+    }
+
+    /**
+     * Keep only string-keyed entries from decoded or otherwise untrusted data.
+     *
+     * @return array<string, mixed>
+     */
+    protected function normalizeStringKeyedArray(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_filter($value, is_string(...), ARRAY_FILTER_USE_KEY);
+    }
+
+    /**
+     * Convert a scalar value received from an untrusted response to an integer.
+     */
+    protected function normalizeInteger(mixed $value, int $default = 0): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_bool($value)) {
+            return $value ? 1 : 0;
+        }
+
+        if (is_float($value) && is_finite($value)) {
+            return (int) $value;
+        }
+
+        if (is_string($value) && is_numeric($value)) {
+            return (int) $value;
+        }
+
+        return $default;
     }
 
     /*
@@ -416,7 +540,8 @@ abstract class Protocol
     /**
      * Method called to process query response data.  Each extending class has to have one of these functions.
      *
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    abstract public function processResponse(): mixed;
+    abstract public function processResponse(): array;
 }

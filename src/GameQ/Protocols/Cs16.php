@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -28,7 +29,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Cs16 extends Source
 {
-
     /**
      * String name of this protocol class
      */
@@ -43,15 +43,14 @@ class Cs16 extends Source
      * In the case of cs 1.6 we offload split packets here because the split packet response for rules is in
      * the old gold source format
      *
-     * @param       $packet_id
-     * @param array $packets
+     * @param int $packet_id
+     * @param list<string> $packets
      *
      * @return string
      * @throws ProtocolException
      */
-    protected function processPackets($packet_id, array $packets = [])
+    protected function processPackets(int $packet_id, array $packets = []): string
     {
-
         // The response is gold source if the packets are split
         $this->source_engine = self::GOLDSOURCE_ENGINE;
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -15,11 +16,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 namespace GameQ\Protocols;
 
 use GameQ\Exception\ProtocolException;
 use GameQ\Result;
 use GameQ\Server;
+use JsonException;
 
 /**
  * Grand Theft Auto Network Protocol Class
@@ -37,11 +40,12 @@ class Gtan extends Http
     /**
      * Packets to send
      *
-     * @var array
+     * @var array<string, string>
      */
     protected array $packets = [
         //self::PACKET_STATUS => "GET /apiservers HTTP/1.0\r\nHost: master.gtanet.work\r\nAccept: */*\r\n\r\n",
-        self::PACKET_STATUS => "GET /gtan/api.php?ip=%s&raw HTTP/1.0\r\nHost: multiplayerhosting.info\r\nAccept: */*\r\n\r\n",
+        self::PACKET_STATUS => "GET /gtan/api.php?ip=%s&raw HTTP/1.0\r\n"
+            . "Host: multiplayerhosting.info\r\nAccept: */*\r\n\r\n",
     ];
 
     /**
@@ -115,13 +119,13 @@ class Gtan extends Http
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // No response, assume offline
-        if (empty($this->packets_response)) {
+        if ($this->packets_response === []) {
             return [
                 'gq_address'    => $this->realIp,
                 'gq_port_query' => $this->realPortQuery,
@@ -129,11 +133,17 @@ class Gtan extends Http
         }
 
         // Implode and rip out the JSON
-        preg_match('/\{(.*)\}/ms', implode('', $this->packets_response), $matches);
+        preg_match('/[{](.*)[}]/ms', implode('', $this->packets_response), $matches);
 
         // Return should be JSON, let's validate
-        if (!isset($matches[0]) || ($json = json_decode($matches[0])) === null) {
+        if (!isset($matches[0])) {
             throw new ProtocolException("JSON response from Gtan protocol is invalid.");
+        }
+
+        try {
+            $json = $this->normalizeStringKeyedArray(json_decode($matches[0], true, 512, JSON_THROW_ON_ERROR));
+        } catch (JsonException $exception) {
+            throw new ProtocolException("JSON response from Gtan protocol is invalid.", 0, $exception);
         }
 
         $result = new Result();
@@ -145,13 +155,14 @@ class Gtan extends Http
         $result->add('gq_port_query', $this->realPortQuery);
 
         // Add server items
-        $result->add('hostname', $json->ServerName);
-        $result->add('serverversion', $json->ServerVersion);
-        $result->add('map', ((!empty($json->Map)) ? $json->Map : 'Los Santos/Blaine Country'));
-        $result->add('mod', $json->Gamemode);
-        $result->add('password', (int)$json->Passworded);
-        $result->add('numplayers', $json->CurrentPlayers);
-        $result->add('maxplayers', $json->MaxPlayers);
+        $result->add('hostname', $json['ServerName'] ?? '');
+        $result->add('serverversion', $json['ServerVersion'] ?? '');
+        $map = $json['Map'] ?? null;
+        $result->add('map', is_string($map) && $map !== '' ? $map : 'Los Santos/Blaine Country');
+        $result->add('mod', $json['Gamemode'] ?? '');
+        $result->add('password', $this->normalizeInteger($json['Passworded'] ?? 0));
+        $result->add('numplayers', $json['CurrentPlayers'] ?? 0);
+        $result->add('maxplayers', $json['MaxPlayers'] ?? 0);
 
         return $result->fetch();
     }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,25 +26,25 @@ class Ase extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Ase
+     * @var \GameQ\Protocols\Ase
      */
-    protected $stub;
+    protected \GameQ\Protocols\Ase $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_ALL => "s",
     ];
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Ase();
@@ -52,19 +53,19 @@ class Ase extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test invalid packet type without debug
      */
-    public function testInvalidPacketType()
+    public function testInvalidPacketType(): void
     {
         // Read in a css source file
-        $source = file_get_contents(sprintf('%s/Providers/Mta/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Mta/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("EYE1", "Something else", $source);
@@ -72,19 +73,21 @@ class Ase extends Base
         // Should show up as offline
         $testResult = $this->queryTest('104.156.48.17:22003', 'mta', explode(PHP_EOL . '||' . PHP_EOL, $source), false);
 
-        $this->assertFalse($testResult['gq_online']);
+        self::assertFalse($testResult['gq_online']);
     }
 
     /**
      * Test for invalid packet type in response
      */
-    public function testInvalidPacketTypeDebug()
+    public function testInvalidPacketTypeDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Ase::processResponse The response header \"Some\" does not match expected \"EYE1\"");
+        $this->expectExceptionMessageContains(
+            'GameQ\Protocols\Ase::processResponse The response header "Some" does not match expected "EYE1"',
+        );
 
         // Read in a css source file
-        $source = file_get_contents(sprintf('%s/Providers/Mta/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Mta/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("EYE1", "Something else", $source);
@@ -96,21 +99,21 @@ class Ase extends Base
     /**
      * Test empty server response without debug
      */
-    public function testEmptyServerResponse()
+    public function testEmptyServerResponse(): void
     {
         // Should show up as offline
         $testResult = $this->queryTest('46.174.48.50:22051', 'mta', [], false);
 
-        $this->assertFalse($testResult['gq_online']);
+        self::assertFalse($testResult['gq_online']);
     }
 
     /**
      * Test empty server response
      */
-    public function testEmptyServerResponseDebug()
+    public function testEmptyServerResponseDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Ase::processResponse The response from the server was empty.");
+        $this->expectExceptionMessageContains("GameQ\Protocols\Ase::processResponse The response from the server was empty.");
 
         // Should fail out
         $this->queryTest('46.174.48.50:22051', 'mta', [], true);

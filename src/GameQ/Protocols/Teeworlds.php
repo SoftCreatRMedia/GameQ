@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,10 +19,10 @@
 
 namespace GameQ\Protocols;
 
-use GameQ\Protocol;
 use GameQ\Buffer;
-use GameQ\Result;
 use GameQ\Exception\ProtocolException;
+use GameQ\Protocol;
+use GameQ\Result;
 
 /**
  * Teeworlds Protocol class
@@ -33,7 +34,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Teeworlds extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -94,13 +94,13 @@ class Teeworlds extends Protocol
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Holds the results
-        $results = [];
+        $resultSets = [];
 
         // Iterate over the packets
         foreach ($this->packets_response as $response) {
@@ -116,23 +116,21 @@ class Teeworlds extends Protocol
             }
 
             // Now we need to call the proper method
-            $results = array_merge(
-                $results,
-                call_user_func_array([$this, $this->responses[$header]], [$buffer])
-            );
+            $resultSets[] = $this->processResponseMethod($this->responses[$header], $buffer);
         }
 
         unset($buffer);
 
-        return $results;
+        return array_merge(...$resultSets);
     }
 
     /**
      * Handle processing all of the data returned
      *
-     * @return array
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    protected function processAll(Buffer $buffer)
+    protected function processAll(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();

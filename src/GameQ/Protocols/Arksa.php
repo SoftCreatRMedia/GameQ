@@ -28,7 +28,7 @@ use GameQ\Result;
  * Extends the EOS protocol and adds ARK-specific server response processing.
  *
  * @package GameQ\Protocols
- * @author  H.Rouatbi
+ * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Arksa extends Eos
 {
@@ -54,75 +54,74 @@ class Arksa extends Eos
     protected string $name = 'arksa';
 
     /**
-     * Grant type used for authentication
-     *
-     * @var string
-     */
-    protected string $grant_type = 'client_credentials';
-
-    /**
      * Deployment ID for the game or application
      *
-     * @var string
+     * @var string|null
      */
     protected ?string $deployment_id = 'ad9a8feffb3b4b2ca315546f038c3ae2';
 
     /**
      * User ID for authentication
      *
-     * @var string
+     * @var string|null
      */
     protected ?string $user_id = 'xyza7891muomRmynIIHaJB9COBKkwj6n';
 
     /**
      * User secret key for authentication
      *
-     * @var string
+     * @var string|null
      */
     protected ?string $user_secret = 'PP5UGxysEieNfSrEicaD1N2Bb3TdXuD7xHYcsdUHZ7s';
 
     /**
      * Process the response from the EOS API and filter ARK-specific server data
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
     public function processResponse(): array
     {
-        $serverData = parent::processResponse();
+        $serverData = $this->getServerSessions();
 
         // Filter by port to match server sessions
         $filtered = array_filter($serverData, function (array $session): bool {
-            $boundAddress = $session['attributes']['ADDRESSBOUND_s'] ?? null;
+            $attributes = $this->normalizeStringKeyedArray($session['attributes'] ?? null);
+            $boundAddress = $attributes['ADDRESSBOUND_s'] ?? null;
 
-            return $boundAddress === "{$this->serverIp}:{$this->serverPortQuery}"
-                || $boundAddress === "0.0.0.0:{$this->serverPortQuery}";
+            return $boundAddress === $this->serverIp . ':' . $this->serverPortQuery
+                || $boundAddress === '0.0.0.0:' . $this->serverPortQuery;
         });
 
-        if (!$filtered) {
+        if ($filtered === []) {
             throw new ProtocolException('No matching sessions found for the specified port.');
         }
 
         $session = reset($filtered);
+        $attributes = $this->normalizeStringKeyedArray($session['attributes'] ?? null);
+        $settings = $this->normalizeStringKeyedArray($session['settings'] ?? null);
 
         $result = new Result();
 
         // Add server items to the result object
-        $result->add('hostname', $this->getAttribute($session['attributes'], 'CUSTOMSERVERNAME_s', 'Unknown'));
-        $result->add('mapname', $this->getAttribute($session['attributes'], 'MAPNAME_s', 'Unknown'));
-        $result->add('password', $this->getAttribute($session['attributes'], 'SERVERPASSWORD_b', false));
+        $result->add('hostname', $this->getAttribute($attributes, 'CUSTOMSERVERNAME_s', 'Unknown'));
+        $result->add('mapname', $this->getAttribute($attributes, 'MAPNAME_s', 'Unknown'));
+        $result->add('password', $this->getAttribute($attributes, 'SERVERPASSWORD_b', false));
         $result->add('numplayers', $this->getAttribute($session, 'totalPlayers', 0));
-        $result->add('maxplayers', $this->getAttribute($session['settings'], 'maxPublicPlayers', 0));
-        $result->add('anticheat', $this->getAttribute($session['attributes'], 'SERVERUSESBATTLEYE_b', false));
-        $result->add('allowJoinInProgress', $this->getAttribute($session['settings'], 'allowJoinInProgress', false));
-        $result->add('day', $this->getAttribute($session['attributes'], 'DAYTIME_s', ''));
+        $result->add('maxplayers', $this->getAttribute($settings, 'maxPublicPlayers', 0));
+        $result->add('anticheat', $this->getAttribute($attributes, 'SERVERUSESBATTLEYE_b', false));
+        $result->add('allowJoinInProgress', $this->getAttribute($settings, 'allowJoinInProgress', false));
+        $result->add('day', $this->getAttribute($attributes, 'DAYTIME_s', ''));
+        $buildId = $this->getAttribute($attributes, 'BUILDID_s', '0');
+        $minorBuildId = $this->getAttribute($attributes, 'MINORBUILDID_s', '0');
+        $buildId = is_scalar($buildId) ? (string) $buildId : '0';
+        $minorBuildId = is_scalar($minorBuildId) ? (string) $minorBuildId : '0';
         $result->add(
             'version',
-            "v" . $this->getAttribute($session['attributes'], 'BUILDID_s', '0') . "." .
-            $this->getAttribute($session['attributes'], 'MINORBUILDID_s', '0')
+            "v$buildId.$minorBuildId",
         );
-        $result->add('pve', (bool) $this->getAttribute($session['attributes'], 'SESSIONISPVE_l', false));
-        $result->add('officialserver', (bool) $this->getAttribute($session['attributes'], 'OFFICIALSERVER_s', false));
+        $result->add('pve', (bool) $this->getAttribute($attributes, 'SESSIONISPVE_l', false));
+        $result->add('officialserver', (bool) $this->getAttribute($attributes, 'OFFICIALSERVER_s', false));
 
         // Return the final result
         return $result->fetch();

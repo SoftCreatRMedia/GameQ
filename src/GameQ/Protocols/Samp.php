@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,11 +19,11 @@
 
 namespace GameQ\Protocols;
 
-use GameQ\Protocol;
 use GameQ\Buffer;
+use GameQ\Exception\ProtocolException;
+use GameQ\Protocol;
 use GameQ\Result;
 use GameQ\Server;
-use GameQ\Exception\ProtocolException;
 
 /**
  * San Andreas Multiplayer Protocol Class (samp)
@@ -34,7 +35,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Samp extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -109,8 +109,8 @@ class Samp extends Protocol
     {
         // Build the server code
         $ipNumbers = array_map('intval', explode('.', $server->ip()));
-        $this->server_code = implode('', array_map('chr', $ipNumbers)) .
-            pack("S", $server->portClient());
+        $this->server_code = implode('', array_map('chr', $ipNumbers))
+            . pack("S", $server->portClient());
 
         // Loop over the packets and update them
         foreach ($this->packets as $packetType => $packet) {
@@ -122,14 +122,17 @@ class Samp extends Protocol
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
         // Results that will be returned
-        $results = [];
+        $resultSets = [];
+
+        if ($this->server_code === null) {
+            throw new ProtocolException('The SAMP server code has not been initialized.');
+        }
 
         // Get the length of the server code so we can figure out how much to read later
         $serverCodeLength = strlen($this->server_code);
@@ -158,15 +161,12 @@ class Samp extends Protocol
             }
 
             // Now we need to call the proper method
-            $results = array_merge(
-                $results,
-                call_user_func_array([$this, $this->responses[$response_type]], [$buffer])
-            );
+            $resultSets[] = $this->processResponseMethod($this->responses[$response_type], $buffer);
 
             unset($buffer);
         }
 
-        return $results;
+        return array_merge(...$resultSets);
     }
 
     /*
@@ -176,12 +176,11 @@ class Samp extends Protocol
     /**
      * Handles processing the server status data
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processStatus(Buffer $buffer)
+    protected function processStatus(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -204,12 +203,11 @@ class Samp extends Protocol
     /**
      * Handles processing the player data into a usable format
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -230,12 +228,11 @@ class Samp extends Protocol
     /**
      * Handles processing the rules data into a usable format
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processRules(Buffer $buffer)
+    protected function processRules(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 

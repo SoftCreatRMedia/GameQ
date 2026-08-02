@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -30,25 +31,25 @@ class Teeworlds extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Teeworlds
+     * @var \GameQ\Protocols\Teeworlds
      */
-    protected $stub;
+    protected \GameQ\Protocols\Teeworlds $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_ALL => "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\x67\x69\x65\x33\x05",
     ];
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Teeworlds();
@@ -57,25 +58,25 @@ class Teeworlds extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test invalid packet type without debug
      */
-    public function testInvalidPacketType()
+    public function testInvalidPacketType(): void
     {
         // Read in a css source file
-        $source = file_get_contents(sprintf('%s/Providers/Teeworlds/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Teeworlds/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace(
             "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffinf35",
             "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffinf36",
-            $source
+            $source,
         );
 
         // Should show up as offline
@@ -83,30 +84,30 @@ class Teeworlds extends Base
             '127.0.0.1:8303',
             'teeworlds',
             explode(PHP_EOL . '||' . PHP_EOL, $source),
-            false
+            false,
         );
 
-        $this->assertFalse($testResult['gq_online']);
+        self::assertFalse($testResult['gq_online']);
     }
 
     /**
      * Test for invalid packet type in response
      */
-    public function testInvalidPacketTypeDebug()
+    public function testInvalidPacketTypeDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage(
-            "GameQ\Protocols\Teeworlds::processResponse response type 'ffffffffffffffffffff696e663336' is not valid"
+        $this->expectExceptionMessageContains(
+            "GameQ\Protocols\Teeworlds::processResponse response type 'ffffffffffffffffffff696e663336' is not valid",
         );
 
         // Read in a css source file
-        $source = file_get_contents(sprintf('%s/Providers/Teeworlds/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Teeworlds/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace(
             "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffinf35",
             "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xffinf36",
-            $source
+            $source,
         );
 
         // Should show up as offline
@@ -116,28 +117,28 @@ class Teeworlds extends Base
     /**
      * Test responses for Teeworlds
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         \GameQ\Tests\MockDNS::mockHosts([
-            'ddracepro.net' => '195.154.113.141'
+            'ddracepro.net' => '195.154.113.141',
         ]);
 
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'teeworlds',
             $responses,
             false,
-            []
+            [],
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

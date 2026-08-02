@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,9 +19,9 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Buffer;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
-use GameQ\Buffer;
 use GameQ\Result;
 
 /**
@@ -31,7 +32,6 @@ use GameQ\Result;
  */
 class Ase extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -89,10 +89,10 @@ class Ase extends Protocol
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Create a new buffer
         $buffer = new Buffer(implode('', $this->packets_response));
@@ -143,23 +143,26 @@ class Ase extends Protocol
     /**
      * Handles processing the extra key/value pairs for server settings
      *
+     * @param Buffer $buffer
+     * @param Result $result
+     * @return void
      * @throws ProtocolException
      */
-    protected function processKeyValuePairs(Buffer $buffer, Result $result)
+    protected function processKeyValuePairs(Buffer $buffer, Result $result): void
     {
         // Key / value pairs
         while ($buffer->getLength()) {
             $key = $buffer->readPascalString(1, true);
 
             // If we have an empty key, we've reached the end
-            if (empty($key)) {
+            if ($key === '') {
                 break;
             }
 
             // Otherwise, add the pair
             $result->add(
                 $key,
-                $buffer->readPascalString(1, true)
+                $buffer->readPascalString(1, true),
             );
         }
 
@@ -169,9 +172,12 @@ class Ase extends Protocol
     /**
      * Handles processing the player and team data into a usable format
      *
+     * @param Buffer $buffer
+     * @param Result $result
+     * @return void
      * @throws ProtocolException
      */
-    protected function processPlayersAndTeams(Buffer $buffer, Result $result)
+    protected function processPlayersAndTeams(Buffer $buffer, Result $result): void
     {
         // Players and team info
         while ($buffer->getLength()) {
@@ -179,22 +185,27 @@ class Ase extends Protocol
             $flags = $buffer->readInt8();
 
             // Get data according to the flags
-            if ($flags & 1) {
+            if (($flags & 1) !== 0) {
                 $result->addPlayer('name', $buffer->readPascalString(1, true));
             }
-            if ($flags & 2) {
+
+            if (($flags & 2) !== 0) {
                 $result->addPlayer('team', $buffer->readPascalString(1, true));
             }
-            if ($flags & 4) {
+
+            if (($flags & 4) !== 0) {
                 $result->addPlayer('skin', $buffer->readPascalString(1, true));
             }
-            if ($flags & 8) {
+
+            if (($flags & 8) !== 0) {
                 $result->addPlayer('score', $buffer->readPascalString(1, true));
             }
-            if ($flags & 16) {
+
+            if (($flags & 16) !== 0) {
                 $result->addPlayer('ping', $buffer->readPascalString(1, true));
             }
-            if ($flags & 32) {
+
+            if (($flags & 32) !== 0) {
                 $result->addPlayer('time', $buffer->readPascalString(1, true));
             }
         }

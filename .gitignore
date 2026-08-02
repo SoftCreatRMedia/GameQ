@@ -3,10 +3,15 @@
 /.settings/*
 vendor
 /.idea
+/.php-cs-fixer.cache
+.phpunit.cache/
 .phpunit.result.cache
+phpunit.xml
 composer.lock
 composer.phar
 !build/logs/.gitkeep
 build/logs/
+build/cache/
+build/coverage/
 test.php
 *.iml

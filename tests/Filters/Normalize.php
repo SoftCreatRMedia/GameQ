@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,6 +19,9 @@
 
 namespace GameQ\Tests\Filters;
 
+use GameQ\Exception\ServerException;
+use LogicException;
+
 /**
  * Class for testing Normalize filter
  *
@@ -25,63 +29,41 @@ namespace GameQ\Tests\Filters;
  */
 class Normalize extends Base
 {
-
     /**
      * Test the filter for Normalize
      *
-     * @dataProvider loadData
      *
-     * @param $protocol
-     * @param $raw
-     * @param $filtered
+     * @param non-empty-array<string, array<string, mixed>> $raw
+     * @param non-empty-array<string, array<string, mixed>> $filtered
+     * @throws LogicException
+     * @throws ServerException
      */
-    public function testFiltered($protocol, $raw, $filtered)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testFiltered(string $protocol, array $raw, array $filtered): void
     {
-
         // Pop the key from the raw response
-        $host = key($raw);
+        $host = self::firstServerKey($raw);
 
-        // Create a mock server
-        $server = $this->getMockBuilder('\GameQ\Server')
-            ->setConstructorArgs([
-                [
-                    \GameQ\Server::SERVER_HOST => $host,
-                    \GameQ\Server::SERVER_TYPE => $protocol,
-                ],
-            ])
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
+        $server = new \GameQ\Server([
+            \GameQ\Server::SERVER_HOST => $host,
+            \GameQ\Server::SERVER_TYPE => $protocol,
+        ]);
+        $filter = new \GameQ\Filters\Normalize();
 
-        // Create a mock filter
-        $filter = $this->getMockBuilder('\GameQ\Filters\Normalize')
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
-
-        $this->assertEquals($filtered[$host], $filter->apply($raw[$host], $server));
+        self::assertEquals($filtered[$host], $filter->apply($raw[$host], $server));
     }
 
     /**
      * Test for empty data pass to filter
      */
-    public function testEmpty()
+    public function testEmpty(): void
     {
+        $server = new \GameQ\Server([
+            \GameQ\Server::SERVER_HOST => '127.0.0.1:27015',
+            \GameQ\Server::SERVER_TYPE => 'css',
+        ]);
+        $filter = new \GameQ\Filters\Normalize();
 
-        // Create a mock server
-        $server = $this->getMockBuilder('\GameQ\Server')
-            ->setConstructorArgs([
-                [
-                    \GameQ\Server::SERVER_HOST => '127.0.0.1:27015',
-                    \GameQ\Server::SERVER_TYPE => 'css',
-                ],
-            ])
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
-
-        // Create a mock filter
-        $filter = $this->getMockBuilder('\GameQ\Filters\Normalize')
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
-
-        $this->assertEmpty($filter->apply([], $server));
+        self::assertEmpty($filter->apply([], $server));
     }
 }

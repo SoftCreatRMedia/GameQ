@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -61,6 +62,7 @@ class Arma3 extends Source
     /**
      * DLC Flags/Bits as defined in the documentation.
      *
+     * @var array<int, string>
      * @see https://community.bistudio.com/wiki/Arma_3:_ServerBrowserProtocol3
      */
     protected array $dlcFlags = [
@@ -100,10 +102,10 @@ class Arma3 extends Source
     /**
      * Process the rules since Arma3 changed their response for rules
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processRules(Buffer $buffer)
+    protected function processRules(Buffer $buffer): array
     {
         // Total number of packets, burn it
         $buffer->readInt16();
@@ -167,7 +169,7 @@ class Arma3 extends Source
 
         // Add mod count
         $result->add('mod_count', $modCount);
-        
+
         // Loop over the mods
         while ($modCount) {
             // Read the mods hash
@@ -178,12 +180,13 @@ class Arma3 extends Source
 
             // Determine isDLC by flag, first bit in upper nibble
             $result->addSub('mods', 'dlc', ($infoByte & 0b00010000) === 0b00010000);
-            
+
             // Read the steam id of the mod/CDLC (might be less than 4 bytes)
             $result->addSub('mods', 'steam_id', $responseBuffer->readInt32($infoByte & 0x0F));
 
             // Read the name of the mod
-            $result->addSub('mods', 'name', $responseBuffer->readPascalString(0, true) ?: 'Unknown');
+            $modName = $responseBuffer->readPascalString(0, true);
+            $result->addSub('mods', 'name', $modName !== '' ? $modName : 'Unknown');
 
             --$modCount;
         }

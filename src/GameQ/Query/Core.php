@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -27,19 +28,18 @@ use GameQ\Exception\QueryException;
  */
 abstract class Core
 {
-
     /**
      * The socket used by this resource
      *
-     * @type null|resource
+     * @var resource|null
      */
     public $socket;
 
     /**
      * The transport type (udp, tcp, etc...)
      * See http://php.net/manual/en/transports.php for the supported list
-      */
-    protected ?string $transport;
+     */
+    protected ?string $transport = null;
 
     /**
      * Connection IP address
@@ -62,9 +62,9 @@ abstract class Core
     protected bool $blocking = false;
 
     /**
-     * Called when the class is cloned
+     * Reset the cloned query socket.
      */
-    public function __clone()
+    public function __clone(): void
     {
         // Reset the properties for this class when cloned
         $this->reset();
@@ -127,6 +127,7 @@ abstract class Core
     /**
      * Get the socket
      *
+     * @return resource
      * @throws QueryException
      */
     abstract public function get(): mixed;
@@ -134,6 +135,7 @@ abstract class Core
     /**
      * Write data to the socket
      *
+     * @param string|list<string> $data
      * @return int The number of bytes written
      * @throws QueryException
      */
@@ -146,6 +148,9 @@ abstract class Core
 
     /**
      * Read the responses from the socket(s)
+     *
+     * @param array<int, array{server_id: string, socket: Core}> $sockets
+     * @return array<int, list<string>>
      */
     abstract public function getResponses(array $sockets, int $timeout, int $stream_timeout): array;
 }

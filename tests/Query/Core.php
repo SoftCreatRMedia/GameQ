@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -19,6 +20,7 @@
 namespace GameQ\Tests\Query;
 
 use GameQ\Tests\TestBase;
+use RuntimeException;
 
 /**
  * Class Core testing
@@ -30,37 +32,65 @@ class Core extends TestBase
     /**
      * Test setting the properties for the query core
      */
-    public function testSet()
+    public function testSet(): void
     {
+        $stub = new class extends \GameQ\Query\Core {
+            protected function create(): void
+            {
+            }
 
-        $stub = $this->getMockForAbstractClass('\GameQ\Query\Core', [ ]);
+            public function get(): mixed
+            {
+                $stream = fopen('php://memory', 'r+b');
+
+                if ($stream === false) {
+                    throw new RuntimeException('Unable to create the query test stream.');
+                }
+
+                return $stream;
+            }
+
+            public function write(string|array $data): int
+            {
+                return 0;
+            }
+
+            public function close(): void
+            {
+            }
+
+            public function getResponses(array $sockets, int $timeout, int $stream_timeout): array
+            {
+                return [];
+            }
+        };
 
         // Set the properties
         $stub->set('tcp', '127.0.0.1', 27015, 5, true);
 
         // Verify the properties
-        $this->assertEquals('tcp', $stub->getTransport());
+        self::assertEquals('tcp', $stub->getTransport());
 
-        $this->assertEquals('127.0.0.1', $stub->getIp());
+        self::assertEquals('127.0.0.1', $stub->getIp());
 
-        $this->assertEquals(27015, $stub->getPort());
+        self::assertEquals(27015, $stub->getPort());
 
-        $this->assertEquals(5, $stub->getTimeout());
+        self::assertEquals(5, $stub->getTimeout());
 
-        $this->assertEquals(true, $stub->getBlocking());
+        self::assertTrue($stub->getBlocking());
 
         // Testing the clone
         $stub_clone = clone $stub;
 
         // All of these should tbe the defaults now
-        $this->assertNull($stub_clone->getTransport());
+        self::assertNull($stub_clone->getTransport());
 
-        $this->assertNull($stub_clone->getIp());
+        self::assertNull($stub_clone->getIp());
 
-        $this->assertNull($stub_clone->getPort());
+        self::assertNull($stub_clone->getPort());
 
-        $this->assertEquals(3, $stub_clone->getTimeout());
+        self::assertEquals(3, $stub_clone->getTimeout());
 
-        $this->assertEquals(false, $stub_clone->getBlocking());
+        self::assertFalse($stub_clone->getBlocking());
     }
 }

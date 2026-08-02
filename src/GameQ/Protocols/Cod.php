@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -27,6 +28,26 @@ namespace GameQ\Protocols;
  */
 class Cod extends Quake3
 {
+    /**
+     * Normalize settings shared by Call of Duty protocols
+     */
+    protected array $normalize = [
+        'general' => [
+            'gametype'   => 'g_gametype',
+            'hostname'   => 'sv_hostname',
+            'mapname'    => 'mapname',
+            'maxplayers' => 'sv_maxclients',
+            'mod'        => '_Mod',
+            'numplayers' => 'clients',
+            'password'   => ['g_needpass', 'pswrd'],
+        ],
+        'player'  => [
+            'name'  => 'name',
+            'ping'  => 'ping',
+            'score' => 'frags',
+        ],
+    ];
+
     /**
      * String name of this protocol class
      */

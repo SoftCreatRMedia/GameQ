@@ -1,13 +1,15 @@
 * text=auto
+*.php text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
 
 /.github export-ignore
 /build export-ignore
 /examples export-ignore
 /tests export-ignore
 /.gitattributes export-ignore
+/.editorconfig export-ignore
 /.gitignore export-ignore
 /CONTRIBUTING.md export-ignore
 /phpstan.dist.neon export-ignore
-/phpunit.xml export-ignore
 /phpunit.xml.dist export-ignore
-/README.md export-ignore

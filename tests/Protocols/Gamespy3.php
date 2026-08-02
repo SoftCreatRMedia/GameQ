@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -23,16 +24,16 @@ class Gamespy3 extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Gamespy3
+     * @var \GameQ\Protocols\Gamespy3
      */
-    protected $stub;
+    protected \GameQ\Protocols\Gamespy3 $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_CHALLENGE => "\xFE\xFD\x09\x10\x20\x30\x40",
         \GameQ\Protocol::PACKET_ALL       => "\xFE\xFD\x00\x10\x20\x30\x40%s\xFF\xFF\xFF\x01",
     ];
@@ -40,9 +41,9 @@ class Gamespy3 extends Base
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Gamespy3();
@@ -51,16 +52,16 @@ class Gamespy3 extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test the challenge application
      */
-    public function testChallengeapply()
+    public function testChallengeapply(): void
     {
         $packets = $this->packets;
 
@@ -75,6 +76,60 @@ class Gamespy3 extends Base
         // Apply the challenge
         $this->stub->challengeParseAndApply($challenge_buffer);
 
-        $this->assertEquals($packets, $this->stub->getPacket());
+        self::assertEquals($packets, $this->stub->getPacket());
+    }
+
+    /**
+     * A partial key at the end of one packet is repeated in full at the start of the next packet.
+     */
+    public function testPartialKeyAtPacketBoundaryIsRemoved(): void
+    {
+        $protocol = new class extends \GameQ\Protocols\Gamespy3 {
+            /**
+             * @param list<string> $packets
+             * @return list<string>
+             */
+            public function cleanPacketList(array $packets): array
+            {
+                return $this->cleanPackets($packets);
+            }
+        };
+
+        $packets = [
+            "hostname\x00Example server\x00bf2_sponsorlo\x00",
+            "bf2_sponsorlogo_url\x00https://example.com/logo.png\x00gametype\x00gpm_cq\x00",
+        ];
+
+        self::assertSame([
+            "hostname\x00Example server\x00",
+            $packets[1],
+        ], $protocol->cleanPacketList($packets));
+    }
+
+    /**
+     * A partial player value can precede the player group header in the next packet.
+     */
+    public function testPartialPlayerValueAtPacketBoundaryIsRemoved(): void
+    {
+        $protocol = new class extends \GameQ\Protocols\Gamespy3 {
+            /**
+             * @param list<string> $packets
+             * @return list<string>
+             */
+            public function cleanPacketList(array $packets): array
+            {
+                return $this->cleanPackets($packets);
+            }
+        };
+
+        $packets = [
+            "hostname\x00Example server\x00 hekut\x00",
+            "player_\x00\x18 hekutooo\x00Bl4ck^Sun\x00",
+        ];
+
+        self::assertSame([
+            "hostname\x00Example server\x00",
+            $packets[1],
+        ], $protocol->cleanPacketList($packets));
     }
 }

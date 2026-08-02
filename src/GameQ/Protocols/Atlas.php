@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -26,7 +27,6 @@ namespace GameQ\Protocols;
  */
 class Atlas extends Source
 {
-
     /**
      * String name of this protocol class
      */

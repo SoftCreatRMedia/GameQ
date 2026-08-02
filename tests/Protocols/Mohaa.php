@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -28,16 +29,16 @@ class Mohaa extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Mohaa
+     * @var \GameQ\Protocols\Mohaa
      */
-    protected $stub;
+    protected \GameQ\Protocols\Mohaa $stub;
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Mohaa();
@@ -47,30 +48,30 @@ class Mohaa extends Base
      * Test to make sure the query port has not changed.  May have to come back and change this if it turns out
      * that the mohaa query port can be different by some kind of predictable interval.
      */
-    public function testQueryPort()
+    public function testQueryPort(): void
     {
-        $this->assertEquals($this->stub->findQueryPort(12203), 12203+97);
+        self::assertEquals($this->stub->findQueryPort(12203), 12203 + 97);
     }
 
     /**
      * Test responses for Medal of honor: Allied Assault
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'mohaa',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,9 +19,9 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Buffer;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
-use GameQ\Buffer;
 use GameQ\Result;
 
 /**
@@ -34,7 +35,6 @@ use GameQ\Result;
  */
 class Gamespy3 extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -72,17 +72,25 @@ class Gamespy3 extends Protocol
 
     /**
      * Parse the challenge response and apply it to all the packet types
+     *
+     * @throws ProtocolException
      */
     public function challengeParseAndApply(Buffer $challenge_buffer): bool
     {
         // Pull out the challenge
-        $challenge = substr(preg_replace("/[^0-9\-]/i", "", $challenge_buffer->getBuffer()), 1);
+        $challengeValue = preg_replace("/[^0-9\-]/", "", $challenge_buffer->getBuffer());
+
+        if ($challengeValue === null) {
+            throw new ProtocolException('Unable to parse the GameSpy3 challenge response.');
+        }
+
+        $challenge = substr($challengeValue, 1);
 
         // By default, no challenge result (see #197)
         $challenge_result = '';
 
         // Check for valid challenge (see #197)
-        if ($challenge) {
+        if ($challenge !== '' && is_numeric($challenge)) {
             $challenge = (int) $challenge;
             // Encode chellenge result
             $challenge_result = sprintf(
@@ -90,7 +98,7 @@ class Gamespy3 extends Protocol
                 ($challenge >> 24),
                 ($challenge >> 16),
                 ($challenge >> 8),
-                ($challenge >> 0)
+                ($challenge >> 0),
             );
         }
 
@@ -100,10 +108,12 @@ class Gamespy3 extends Protocol
 
     /**
      * Process the response
+     *
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
         // Holds the processed packets
         $processed = [];
 
@@ -142,6 +152,10 @@ class Gamespy3 extends Protocol
         // Split the packets by type general and the rest (i.e. players & teams)
         $split = preg_split($this->packetsplit, implode('', $packets));
 
+        if ($split === false || $split === []) {
+            throw new ProtocolException('Unable to split the GameSpy3 response.');
+        }
+
         // Create a new result
         $result = new Result();
 
@@ -168,10 +182,13 @@ class Gamespy3 extends Protocol
 
     /**
      * Handles cleaning up packets since the responses can be a bit "dirty"
+     *
+     * @param list<string> $packets
+     * @return list<string>
+     * @throws ProtocolException
      */
     protected function cleanPackets(array $packets = []): array
     {
-
         // Get the number of packets
         $packetCount = count($packets);
 
@@ -184,14 +201,31 @@ class Gamespy3 extends Protocol
             // Second packet
             $snd = $packets[$i + 1];
             // Get last variable from first packet
-            $fstvar = substr($fst, strrpos($fst, "\x00") + 1);
-            // Get first variable from last packet
-            $snd = substr($snd, strpos($snd, "\x00") + 2);
-            $sndvar = substr($snd, 0, strpos($snd, "\x00"));
-            // Check if fstvar is a substring of sndvar
+            $lastSeparator = strrpos($fst, "\x00");
+            $fstvar = $lastSeparator === false ? '' : substr($fst, $lastSeparator + 1);
+            // Get first variable from the next packet
+            $firstSeparator = strpos($snd, "\x00");
+            $sndvar = $firstSeparator === false ? $snd : substr($snd, 0, $firstSeparator);
+
+            // Player and team blocks begin with their group name and a two-byte field prefix.
+            if (
+                $firstSeparator !== false
+                && $fstvar !== ''
+                && !str_starts_with($sndvar, $fstvar)
+            ) {
+                $fieldData = substr($snd, $firstSeparator + 2);
+                $nextSeparator = strpos($fieldData, "\x00");
+                $sndvar = $nextSeparator === false ? $fieldData : substr($fieldData, 0, $nextSeparator);
+            }
+
+            // Check if fstvar is the partial prefix of sndvar
             // If so, remove it from the first string
-            if (!empty($fstvar) && str_contains($sndvar, $fstvar)) {
-                $packets[$i] = preg_replace("#(\\x00[^\\x00]+\\x00)$#", "\x00", $packets[$i]);
+            if ($fstvar !== '' && str_starts_with($sndvar, $fstvar)) {
+                $cleanedPacket = preg_replace("#(\\x00[^\\x00]+\\x00)$#", "\x00", $packets[$i]);
+
+                if ($cleanedPacket !== null) {
+                    $packets[$i] = $cleanedPacket;
+                }
             }
         }
 
@@ -202,8 +236,7 @@ class Gamespy3 extends Protocol
             $prefix = $buffer->readString();
 
             // Check to see if the return before has the same prefix present
-            if (str_contains($packets[($x - 1)], $prefix)
-            ) {
+            if ($prefix !== '' && str_contains($packets[($x - 1)], $prefix)) {
                 // Update the return by removing the prefix plus 2 chars
                 $packets[$x] = substr(str_replace($prefix, '', $packets[$x]), 2);
             }
@@ -214,7 +247,7 @@ class Gamespy3 extends Protocol
         unset($x, $i, $snd, $sndvar, $fst, $fstvar);
 
         // Return cleaned packets
-        return $packets;
+        return array_values($packets);
     }
 
     /**
@@ -227,6 +260,7 @@ class Gamespy3 extends Protocol
         // We go until we hit an empty key
         while ($buffer->getLength()) {
             $key = $buffer->readString();
+
             if ($key === '') {
                 break;
             }
@@ -251,23 +285,25 @@ class Gamespy3 extends Protocol
          */
         $data = explode("\x00\x00", $buffer->getBuffer());
 
-        // By default item_group is blank, this will be set for each loop through the data
+        // By default, item_group is blank, this will be set for each loop through the data
         $item_group = '';
 
-        // By default the item_type is blank, this will be set on each loop
+        // By default, the item_type is blank, this will be set on each loop
         $item_type = '';
 
         // Save count as variable
         $count = count($data);
 
-        // Loop through all of the $data for information and pull it out into the result
+        // Loop through all the $data for information and pull it out into the result
         for ($x = 0; $x < $count - 1; $x++) {
             // Pull out the item
             $item = $data[$x];
+
             // If this is an empty item, move on
             if ($item === '' || $item === "\x00") {
                 continue;
             }
+
             /*
             * Left as reference:
             *
@@ -297,6 +333,7 @@ class Gamespy3 extends Protocol
 
                 // Make a temp buffer so we have easier access to the data
                 $buf_temp = new Buffer($item, Buffer::NUMBER_TYPE_BIGENDIAN);
+
                 // Get the values
                 while ($buf_temp->getLength()) {
                     // No value so break the loop, end of string

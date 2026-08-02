@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -36,14 +37,14 @@ use GameQ\Result;
  */
 class Ventrilo extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
      */
     protected array $packets = [
-        self::PACKET_ALL =>
-            "V\xc8\xf4\xf9`\xa2\x1e\xa5M\xfb\x03\xccQN\xa1\x10\x95\xaf\xb2g\x17g\x812\xfbW\xfd\x8e\xd2\x22r\x034z\xbb\x98",
+        self::PACKET_ALL
+            => "V\xc8\xf4\xf9`\xa2\x1e\xa5M\xfb\x03\xccQN\xa1\x10\x95\xaf\xb2g"
+                . "\x17g\x812\xfbW\xfd\x8e\xd2\x22r\x034z\xbb\x98",
     ];
 
     /**
@@ -93,9 +94,9 @@ class Ventrilo extends Protocol
     /**
      * Encryption table for the header
      *
-     * @type array
+     * @var list<int>
      */
-    private $head_encrypt_table = [
+    private array $head_encrypt_table = [
         0x80,
         0xe5,
         0x0e,
@@ -357,9 +358,9 @@ class Ventrilo extends Protocol
     /**
      * Encryption table for the data
      *
-     * @type array
+     * @var list<int>
      */
-    private $data_encrypt_table = [
+    private array $data_encrypt_table = [
         0x82,
         0x8b,
         0x7f,
@@ -621,12 +622,11 @@ class Ventrilo extends Protocol
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
         // We need to decrypt the packets
         $decrypted = $this->decryptPackets($this->packets_response);
 
@@ -634,12 +634,15 @@ class Ventrilo extends Protocol
         $decrypted = preg_replace_callback(
             '|%([0-9A-F]{2})|',
             static function ($matches) {
-
                 // Pack this into ascii
                 return pack('H*', $matches[1]);
             },
-            $decrypted
+            $decrypted,
         );
+
+        if ($decrypted === null) {
+            throw new ProtocolException('Unable to decode the Ventrilo response.');
+        }
 
         // Explode into lines
         $lines = explode("\n", $decrypted);
@@ -693,31 +696,36 @@ class Ventrilo extends Protocol
                 switch ($key) {
                     case 'client':
                         $this->processPlayer($value, $playerFields, $result);
+
                         break;
 
                     case 'channel':
                         $this->processChannel($value, $channelFields, $result);
+
                         break;
 
-                    // Find the number of fields for the channels
+                        // Find the number of fields for the channels
                     case 'channelfields':
                         $channelFields = count(explode(',', $value));
+
                         break;
 
-                    // Find the number of fields for the players
+                        // Find the number of fields for the players
                     case 'clientfields':
                         $playerFields = count(explode(',', $value));
+
                         break;
 
-                    // By default we just add they key as an item
+                        // By default we just add they key as an item
                     default:
                         $result->add($key, $this->convertToUtf8($value));
+
                         break;
                 }
             }
         }
 
-        unset($decrypted, $line, $lines, $colon_pos, $key, $value);
+        unset($decrypted, $lines, $colon_pos, $key, $value);
 
         return $result->fetch();
     }
@@ -729,26 +737,47 @@ class Ventrilo extends Protocol
     /**
      * Decrypt the incoming packets
      *
+     * @param list<string> $packets
      * @return string
      * @throws ProtocolException
      */
-    protected function decryptPackets(array $packets = [])
+    protected function decryptPackets(array $packets = []): string
     {
-
         // This will be returned
         $decrypted = [];
+        $expectedCrcValues = [];
+        $expectedLengths = [];
 
         foreach ($packets as $packet) {
             # Header :
             $header = substr($packet, 0, 20);
 
+            if (strlen($header) !== 20) {
+                throw new ProtocolException(__METHOD__ . ': Packet header is truncated');
+            }
+
             $header_items = [];
 
             $header_key = unpack("n1", $header);
-
-            $key = array_shift($header_key);
-
             $chars = unpack("C*", substr($header, 2));
+            $headerKeyValue = $header_key[1] ?? null;
+
+            if ($header_key === false || $chars === false || !is_int($headerKeyValue)) {
+                throw new ProtocolException(__METHOD__ . ': Packet header is invalid');
+            }
+
+            $key = $headerKeyValue;
+
+            $headerCharacters = [];
+
+            foreach ($chars as $index => $character) {
+                if (!is_int($character)) {
+                    throw new ProtocolException(__METHOD__ . ': Packet header contains an invalid byte');
+                }
+
+                $headerCharacters[$index] = $character;
+            }
+            $chars = $headerCharacters;
 
             $a1 = $key & 0xFF;
             $a2 = $key >> 8;
@@ -762,17 +791,25 @@ class Ventrilo extends Protocol
             $characterCount = count($chars);
 
             $key = 0;
+
             for ($index = 1; $index <= $characterCount; $index++) {
                 $chars[$index] -= ($table[$a2] + (($index - 1) % 5)) & 0xFF;
                 $a2 = ($a2 + $a1) & 0xFF;
+
                 if (($index % 2) === 0) {
-                    $short_array = unpack("n1", pack("C2", $chars[$index - 1], $chars[$index]));
-                    $header_items[$key] = $short_array[1];
+                    $shortArray = unpack("n1", pack("C2", $chars[$index - 1], $chars[$index]));
+                    $shortValue = $shortArray[1] ?? null;
+
+                    if ($shortArray === false || !is_int($shortValue)) {
+                        throw new ProtocolException(__METHOD__ . ': Packet header field is invalid');
+                    }
+
+                    $header_items[$key] = $shortValue;
                     ++$key;
                 }
             }
 
-            $header_items = array_combine([
+            $headerFields = [
                 'zero',
                 'cmd',
                 'id',
@@ -782,54 +819,138 @@ class Ventrilo extends Protocol
                 'pck',
                 'datakey',
                 'crc',
-            ], $header_items);
+            ];
+
+            if (count($header_items) !== count($headerFields)) {
+                throw new ProtocolException(__METHOD__ . ': Packet header has an unexpected length');
+            }
+
+            $headerItems = [];
+
+            foreach ($headerFields as $index => $field) {
+                $headerItems[$field] = $header_items[$index];
+            }
 
             // Check to make sure the number of packets match
-            if ($header_items['totpck'] !== count($packets)) {
+            if ($headerItems['totpck'] !== count($packets)) {
                 throw new ProtocolException(__METHOD__ . ": Too few packets received");
             }
 
+            $expectedCrcValues[] = $headerItems['crc'];
+            $expectedLengths[] = $headerItems['totlen'];
+
             # Data :
             $table = $this->data_encrypt_table;
-            $a1 = $header_items['datakey'] & 0xFF;
-            $a2 = $header_items['datakey'] >> 8;
+            $a1 = $headerItems['datakey'] & 0xFF;
+            $a2 = $headerItems['datakey'] >> 8;
 
             if ($a1 === 0) {
                 throw new ProtocolException(__METHOD__ . ": Data key is invalid");
             }
 
             $chars = unpack("C*", substr($packet, 20));
-            if ($chars !== false) {
-                $data = "";
-                $characterCount = count($chars);
 
-                for ($index = 1; $index <= $characterCount; $index++) {
-                    $chars[$index] -= ($table[$a2] + (($index - 1) % 72)) & 0xFF;
-                    $a2 = ($a2 + $a1) & 0xFF;
-                    $data .= chr($chars[$index]);
-                }
-                //@todo: Check CRC ???
-                $decrypted[$header_items['pck']] = $data;
+            if ($chars === false) {
+                throw new ProtocolException(__METHOD__ . ': Packet data is invalid');
             }
+
+            $dataCharacters = [];
+
+            foreach ($chars as $index => $character) {
+                if (!is_int($character)) {
+                    throw new ProtocolException(__METHOD__ . ': Packet data contains an invalid byte');
+                }
+
+                $dataCharacters[$index] = $character;
+            }
+            $chars = $dataCharacters;
+
+            $data = "";
+            $characterCount = count($chars);
+
+            for ($index = 1; $index <= $characterCount; $index++) {
+                $chars[$index] = (
+                    $chars[$index] - (($table[$a2] + (($index - 1) % 72)) & 0xFF)
+                ) & 0xFF;
+                $a2 = ($a2 + $a1) & 0xFF;
+                $data .= chr($chars[$index]);
+            }
+
+            if (strlen($data) !== $headerItems['len']) {
+                throw new ProtocolException(__METHOD__ . ': Decrypted packet length does not match its header');
+            }
+
+            $decrypted[$headerItems['pck']] = $data;
         }
 
-        // Return the decrypted packets as one string
-        return implode('', $decrypted);
+        if (count(array_unique($expectedCrcValues)) > 1) {
+            throw new ProtocolException(__METHOD__ . ': Packet headers contain different checksums');
+        }
+
+        if (count(array_unique($expectedLengths)) > 1) {
+            throw new ProtocolException(__METHOD__ . ': Packet headers contain different total lengths');
+        }
+
+        $expectedCrc = $expectedCrcValues[0] ?? null;
+        $expectedLength = $expectedLengths[0] ?? null;
+
+        ksort($decrypted);
+        $data = implode('', $decrypted);
+
+        if ($expectedLength !== null && strlen($data) !== $expectedLength) {
+            throw new ProtocolException(__METHOD__ . ': Decrypted response length does not match its header');
+        }
+
+        if ($expectedCrc !== null && $this->calculateCrc($data) !== $expectedCrc) {
+            throw new ProtocolException(__METHOD__ . ': Decrypted response checksum is invalid');
+        }
+
+        return $data;
+    }
+
+    /**
+     * Calculate the CRC-16/CCITT checksum used by the Ventrilo status protocol.
+     */
+    private function calculateCrc(string $data): int
+    {
+        $crc = 0;
+
+        for ($index = 0, $length = strlen($data); $index < $length; ++$index) {
+            $tableValue = ($crc >> 8) << 8;
+
+            for ($bit = 0; $bit < 8; ++$bit) {
+                $tableValue = (($tableValue << 1) ^ (($tableValue & 0x8000) !== 0 ? 0x1021 : 0)) & 0xFFFF;
+            }
+
+            $crc = ($tableValue ^ ord($data[$index]) ^ ($crc << 8)) & 0xFFFF;
+        }
+
+        return $crc;
     }
 
     /**
      * Process the channel listing
+     *
+     * @param string $data
+     * @param int $fieldCount
+     * @param Result $result
+     * @return void
      */
-    protected function processChannel(string $data, int $fieldCount, Result $result)
+    protected function processChannel(string $data, int $fieldCount, Result $result): void
     {
-
         // Split the items on the comma
         $items = explode(",", $data, $fieldCount);
 
         // Iterate over the items for this channel
         foreach ($items as $item) {
             // Split the key=value pair
-            list($key, $value) = explode("=", $item, 2);
+            $parts = explode("=", $item, 2);
+
+            if (count($parts) !== 2) {
+                continue;
+            }
+
+            [$key, $value] = $parts;
 
             $result->addTeam(strtolower($key), $this->convertToUtf8($value));
         }
@@ -837,17 +958,27 @@ class Ventrilo extends Protocol
 
     /**
      * Process the user listing
+     *
+     * @param string $data
+     * @param int $fieldCount
+     * @param Result $result
+     * @return void
      */
-    protected function processPlayer(string $data, int $fieldCount, Result $result)
+    protected function processPlayer(string $data, int $fieldCount, Result $result): void
     {
-
         // Split the items on the comma
         $items = explode(",", $data, $fieldCount);
 
         // Iterate over the items for this player
         foreach ($items as $item) {
             // Split the key=value pair
-            list($key, $value) = explode("=", $item, 2);
+            $parts = explode("=", $item, 2);
+
+            if (count($parts) !== 2) {
+                continue;
+            }
+
+            [$key, $value] = $parts;
 
             $result->addPlayer(strtolower($key), $this->convertToUtf8($value));
         }

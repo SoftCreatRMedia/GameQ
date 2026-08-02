@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,22 +26,21 @@ namespace GameQ\Tests\Filters;
  */
 class Secondstohuman extends Base
 {
-
     /**
      * Test default filter settings
      */
-    public function testFilteredDefault()
+    public function testFilteredDefault(): void
     {
         $data = [
             'time'    => 8634.0791015625, //02:23:54
             'players' => [
                 [
                     'name' => 'fake_player1',
-                    'time' => 7650.4604492188 //02:07:30
+                    'time' => 7650.4604492188, //02:07:30
                 ],
                 [
                     'name'      => 'fake_player2',
-                    'time_conn' => 1333.1260986328 //00:22:13
+                    'time_conn' => 1333.1260986328, //00:22:13
                 ],
             ],
         ];
@@ -61,40 +61,30 @@ class Secondstohuman extends Base
             ],
         ];
 
-        // Create a mock server
-        $server = $this->getMockBuilder('\GameQ\Server')
-            ->setConstructorArgs([
-                [
-                    \GameQ\Server::SERVER_HOST => '127.0.0.1:27015',
-                    \GameQ\Server::SERVER_TYPE => 'css',
-                ],
-            ])
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
+        $server = new \GameQ\Server([
+            \GameQ\Server::SERVER_HOST => '127.0.0.1:27015',
+            \GameQ\Server::SERVER_TYPE => 'css',
+        ]);
+        $filter = new \GameQ\Filters\Secondstohuman();
 
-        // Create a mock filter
-        $filter = $this->getMockBuilder('\GameQ\Filters\Secondstohuman')
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
-
-        $this->assertEquals($dataAfter, $filter->apply($data, $server));
+        self::assertEquals($dataAfter, $filter->apply($data, $server));
     }
 
     /**
      * Test the filter for Seconds to human using custom keys
      */
-    public function testFilteredCustom()
+    public function testFilteredCustom(): void
     {
         $data = [
             'time'    => 8634.0791015625, //02:23:54
             'players' => [
                 [
                     'name' => 'fake_player1',
-                    'time' => 7650.4604492188 //02:07:30
+                    'time' => 7650.4604492188, //02:07:30
                 ],
                 [
                     'name'      => 'fake_player2',
-                    'time_conn' => 1333.1260986328 //00:22:13
+                    'time_conn' => 1333.1260986328, //00:22:13
                 ],
             ],
         ];
@@ -116,27 +106,14 @@ class Secondstohuman extends Base
             ],
         ];
 
-        // Create a mock server
-        $server = $this->getMockBuilder('\GameQ\Server')
-            ->setConstructorArgs([
-                [
-                    \GameQ\Server::SERVER_HOST => '127.0.0.1:27015',
-                    \GameQ\Server::SERVER_TYPE => 'css',
-                ],
-            ])
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
+        $server = new \GameQ\Server([
+            \GameQ\Server::SERVER_HOST => '127.0.0.1:27015',
+            \GameQ\Server::SERVER_TYPE => 'css',
+        ]);
+        $filter = new \GameQ\Filters\Secondstohuman([
+            \GameQ\Filters\Secondstohuman::OPTION_TIMEKEYS => ['time', 'time_conn'],
+        ]);
 
-        // Create a mock filter
-        $filter = $this->getMockBuilder('\GameQ\Filters\Secondstohuman')
-            ->setConstructorArgs([
-                [
-                    \GameQ\Filters\Secondstohuman::OPTION_TIMEKEYS => ['time', 'time_conn'],
-                ],
-            ])
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
-
-        $this->assertEquals($dataAfter, $filter->apply($data, $server));
+        self::assertEquals($dataAfter, $filter->apply($data, $server));
     }
 }

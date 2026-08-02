@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -19,6 +20,7 @@
 namespace GameQ\Protocols;
 
 use GameQ\Buffer;
+use GameQ\Exception\ProtocolException;
 use GameQ\Result;
 
 /**
@@ -38,8 +40,12 @@ class Codmw2 extends Quake3
      * Longer string name of this protocol class
      */
     protected string $name_long = "Call of Duty: Modern Warfare 2";
-    
-    protected function processPlayers(Buffer $buffer)
+
+    /**
+     * @return array<string, mixed>
+     * @throws ProtocolException
+     */
+    protected function processPlayers(Buffer $buffer): array
     {
         // Temporarily cache players in order to remove last
         $players = [];
@@ -47,7 +53,13 @@ class Codmw2 extends Quake3
         // Loop until we are out of data
         while ($buffer->getLength()) {
             // Make a new buffer with this block
-            $playerInfo = new Buffer($buffer->readString("\x0A"));
+            $playerData = $buffer->readString("\x0A");
+
+            if ($playerData === '') {
+                continue;
+            }
+
+            $playerInfo = new Buffer($playerData);
 
             // Read player info
             $player = [
@@ -64,9 +76,6 @@ class Codmw2 extends Quake3
             // Add player
             $players[] = $player;
         }
-
-        // Remove last, empty player
-        array_pop($players);
 
         // Set the result to a new result instance
         $result = new Result();

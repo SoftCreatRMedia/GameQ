@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -21,12 +22,13 @@ namespace GameQ\Protocols;
 use GameQ\Exception\ProtocolException;
 use GameQ\Result;
 use GameQ\Server;
+use JsonException;
 
 /**
  * Stationeers Protocol Class
  *
- * **Note:** This protocol does use the offical, centralized "Metaserver" to query the list of all available servers. This
- * is effectively a host controlled by a third party which could interfere with the functionality of this protocol.
+ * **Note:** This protocol does use the official, centralized "Metaserver" to query the list of all available servers.
+ * This is effectively a host controlled by a third party which could interfere with this protocol.
  *
  * @author Austin Bischoff <austin@codebeard.com>
  */
@@ -45,7 +47,7 @@ class Stationeers extends Http
     /**
      * Packets to send
      *
-     * @var array
+     * @var array<string, string>
      */
     protected array $packets = [
         self::PACKET_STATUS => "GET /list HTTP/1.0\r\nAccept: */*\r\n\r\n",
@@ -75,7 +77,7 @@ class Stationeers extends Http
     /**
      * Normalize some items
      *
-     * @var array
+     * @var array<string, array<string, string|list<string>>>
      */
     protected array $normalize = [
         // General
@@ -95,7 +97,7 @@ class Stationeers extends Http
      *
      * **NOTE:** These is used during the runtime.
      *
-     * @var string
+     * @var string|null
      */
     protected ?string $realIp = null;
 
@@ -104,7 +106,7 @@ class Stationeers extends Http
      *
      * **NOTE:** These is used during the runtime.
      *
-     * @var int
+     * @var int|null
      */
     protected ?int $realPortQuery = null;
 
@@ -118,35 +120,53 @@ class Stationeers extends Http
     public function beforeSend(Server $server): void
     {
         /* Determine the connection information to be used for the "Metaserver" */
-        $metaServerHost = $server->getOption('meta_host') ?: self::SERVER_LIST_HOST;
-        $metaServerPort = $server->getOption('meta_port') ?: self::SERVER_LIST_PORT;
+        $hostOption = $server->getOption('meta_host');
+        $metaServerHost = is_string($hostOption) && $hostOption !== ''
+            ? $hostOption
+            : self::SERVER_LIST_HOST;
+        $metaServerPort = $this->normalizeInteger($server->getOption('meta_port'), self::SERVER_LIST_PORT);
 
-        /* Save the real connection information and overwrite the properties with the "Metaserver" connection information */
+        if ($metaServerPort < 1 || $metaServerPort > 65535) {
+            $metaServerPort = self::SERVER_LIST_PORT;
+        }
+
+        /* Save the real connection information and point the server at the Metaserver. */
         $this->realIp = $server->ip();
         $this->realPortQuery = $server->portQuery();
-        $server->ip = (string) $metaServerHost;
-        $server->port_query = (int) $metaServerPort;
+        $server->ip = $metaServerHost;
+        $server->port_query = $metaServerPort;
     }
 
     /**
      * Process the response
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
     public function processResponse(): array
     {
         /* Ensure there is a reply from the "Metaserver" */
-        if (empty($this->packets_response)) {
+        if ($this->packets_response === []) {
             return [];
         }
 
         // Implode and rip out the JSON
-        preg_match('/\{(.*)\}/ms', implode('', $this->packets_response), $matches);
+        preg_match('/[{](.*)[}]/ms', implode('', $this->packets_response), $matches);
 
         // Return should be JSON, let's validate
-        if (!isset($matches[0]) || !is_array($json = json_decode($matches[0], true))) {
+        if (!isset($matches[0])) {
             throw new ProtocolException(__METHOD__ . " JSON response from Stationeers Metaserver is invalid.");
+        }
+
+        try {
+            $decoded = json_decode($matches[0], true, 512, JSON_THROW_ON_ERROR);
+            $json = $this->normalizeStringKeyedArray($decoded);
+        } catch (JsonException $exception) {
+            throw new ProtocolException(
+                __METHOD__ . " JSON response from Stationeers Metaserver is invalid.",
+                0,
+                $exception,
+            );
         }
 
         if (!isset($json['GameSessions']) || !is_array($json['GameSessions'])) {
@@ -157,13 +177,20 @@ class Stationeers extends Http
         $server = null;
 
         // Find the server on this list by iterating over the entire list.
-        foreach ($json['GameSessions'] as $serverEntry) {
+        foreach ($json['GameSessions'] as $serverData) {
+            $serverEntry = $this->normalizeStringKeyedArray($serverData);
+
+            if ($serverEntry === []) {
+                continue;
+            }
+
             // Server information passed matches an entry on this list
             $addressMatches = ($serverEntry['Address'] ?? null) === $this->realIp;
-            $portMatches = (int) ($serverEntry['Port'] ?? 0) === $this->realPortQuery;
+            $portMatches = $this->normalizeInteger($serverEntry['Port'] ?? 0) === $this->realPortQuery;
 
             if ($addressMatches && $portMatches) {
                 $server = $serverEntry;
+
                 break;
             }
         }
@@ -172,12 +199,12 @@ class Stationeers extends Http
         unset($matches, $serverEntry, $json);
 
         /* Ensure the provided Server has been found in the list provided by the "Metaserver" */
-        if (! $server) {
+        if ($server === null || $this->realIp === null || $this->realPortQuery === null) {
             throw new ProtocolException(sprintf(
                 '%s Unable to find the server "%s:%d" in the Stationeer Metaservers server list',
                 __METHOD__,
                 $this->realIp,
-                $this->realPortQuery
+                $this->realPortQuery,
             ));
         }
 
@@ -190,7 +217,7 @@ class Stationeers extends Http
         $result->add('version', $server['Version'] ?? '');
         $result->add('map', $server['MapName'] ?? '');
         $result->add('uptime', $server['UpTime'] ?? 0);
-        $result->add('password', (int) ($server['Password'] ?? 0));
+        $result->add('password', $this->normalizeInteger($server['Password'] ?? 0));
         $result->add('numplayers', $server['Players'] ?? 0);
         $result->add('maxplayers', $server['MaxPlayers'] ?? 0);
         $result->add('type', $server['Type'] ?? '');

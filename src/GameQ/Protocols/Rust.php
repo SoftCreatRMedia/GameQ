@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -29,6 +30,45 @@ use GameQ\Exception\ProtocolException;
  */
 class Rust extends Source
 {
+    /** @var list<string> */
+    private const SERVER_KEYWORDS = [
+        'born',
+        'carbon',
+        'oxide',
+        'modded',
+        'cp',
+        'cs',
+        'gm',
+        'mp',
+        'pt',
+        'qp',
+        'st',
+        'h',
+        'v',
+    ];
+
+    /** @var list<string> */
+    private const SERVER_TAGS = [
+        'monthly',
+        'biweekly',
+        'weekly',
+        'vanilla',
+        'hardcore',
+        'softcore',
+        'pve',
+        'roleplay',
+        'creative',
+        'minigame',
+        'training',
+        'battlefield',
+        'broyale',
+        'builds',
+        'tut',
+        'premium',
+    ];
+
+    /** @var list<string> */
+    private const REGION_TAGS = ['na', 'sa', 'eu', 'wa', 'ea', 'oc', 'af'];
 
     /**
      * String name of this protocol class
@@ -43,19 +83,87 @@ class Rust extends Source
     /**
      * Overload so we can get max players from mp of keywords and num players from cp keyword
      *
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processDetails(Buffer $buffer)
+    protected function processDetails(Buffer $buffer): array
     {
         $results = parent::processDetails($buffer);
 
-        if ($results['keywords']) {
-            //get max players from mp of keywords and num players from cp keyword
-            preg_match_all('/(mp|cp)([\d]+)/', $results['keywords'], $matches);
-            $results['max_players'] = (int)$matches[2][0];
-            $results['num_players'] = (int)$matches[2][1];
+        if (!isset($results['keywords']) || !is_string($results['keywords']) || $results['keywords'] === '') {
+            return $results;
+        }
+
+        $parsed = $this->parseKeywords(explode(',', $results['keywords']));
+        $results = array_merge($results, $parsed);
+        $serverKeywords = $parsed['server.keywords'];
+
+        if (isset($serverKeywords['mp']) && is_numeric($serverKeywords['mp'])) {
+            $results['max_players'] = (int) $serverKeywords['mp'];
+        }
+
+        if (isset($serverKeywords['cp']) && is_numeric($serverKeywords['cp'])) {
+            $results['num_players'] = (int) $serverKeywords['cp'];
         }
 
         return $results;
+    }
+
+    /**
+     * @param list<string> $keywords
+     * @return array{
+     *     'server.keywords': array<string, string|true>,
+     *     'server.tags': list<string>,
+     *     'unhandled.tags': list<string>,
+     *     region?: string
+     * }
+     */
+    protected function parseKeywords(array $keywords): array
+    {
+        $result = [
+            'server.keywords' => [],
+            'server.tags' => [],
+            'unhandled.tags' => [],
+        ];
+
+        foreach ($keywords as $keyword) {
+            $keyword = strtolower(trim($keyword));
+
+            if ($keyword === '') {
+                continue;
+            }
+
+            if (in_array($keyword, self::SERVER_TAGS, true)) {
+                $result['server.tags'][] = $keyword;
+
+                continue;
+            }
+
+            if (in_array($keyword, self::REGION_TAGS, true)) {
+                $result['region'] = strtoupper($keyword);
+
+                continue;
+            }
+
+            $parsed = false;
+
+            foreach (self::SERVER_KEYWORDS as $name) {
+                if (!str_starts_with($keyword, $name)) {
+                    continue;
+                }
+
+                $value = substr($keyword, strlen($name));
+                $result['server.keywords'][$name] = $value !== '' ? $value : true;
+                $parsed = true;
+
+                break;
+            }
+
+            if (!$parsed) {
+                $result['unhandled.tags'][] = $keyword;
+            }
+        }
+
+        return $result;
     }
 }

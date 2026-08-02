@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,6 +19,8 @@
 
 namespace GameQ\Tests\Protocols;
 
+use UnexpectedValueException;
+
 /**
  * Test Class for Atlas
  *
@@ -28,24 +31,31 @@ class Atlas extends Base
     /**
      * Test responses for Atlas
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
-
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
         // Splited to later be compared with query port
-        $serverArr=explode(":", $server);
+        $serverParts = explode(":", $server, 2);
+
+        if (!isset($serverParts[1]) || !ctype_digit($serverParts[1])) {
+            throw new UnexpectedValueException("Invalid Atlas fixture address '$server'.");
+        }
 
         // Pull the query port of the array
-        $queryPort=$result[$server]['gq_port_query'];
+        $queryPort = $result[$server]['gq_port_query'];
+
+        if (!is_int($queryPort)) {
+            throw new UnexpectedValueException('The Atlas query port must be an integer.');
+        }
 
         // Here we add the default server port difference to the server game port
-        $defaultQueryPort = $serverArr[1] + 51800;
+        $defaultQueryPort = (int) $serverParts[1] + 51800;
 
         /**
          * Compare if the port is the same, if not, we should use the custom port in the server query.
@@ -58,7 +68,7 @@ class Atlas extends Base
          * Default query port: gamePort + 51800
          *
          */
-        if ($queryPort != $defaultQueryPort) {
+        if ($queryPort !== $defaultQueryPort) {
             $options = [
                 'query_port' => $queryPort,
             ];
@@ -67,16 +77,16 @@ class Atlas extends Base
                 'atlas',
                 $responses,
                 false,
-                $options
+                $options,
             );
         } else {
             $testResult = $this->queryTest(
                 $server,
                 'atlas',
-                $responses
+                $responses,
             );
         }
 
-        $this->assertEqualsDelta($result[$server], $testResult, 0.00000001);
+        self::assertEqualsDelta($result[$server], $testResult, 0.00000001);
     }
 }

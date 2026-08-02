@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,9 +19,9 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Buffer;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
-use GameQ\Buffer;
 use GameQ\Result;
 
 /**
@@ -30,7 +31,6 @@ use GameQ\Result;
  */
 class Gamespy extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -64,7 +64,7 @@ class Gamespy extends Protocol
      *
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Holds the processed packets so we can sort them in case they come in an unordered
         $processed = [];
@@ -72,14 +72,15 @@ class Gamespy extends Protocol
         // Iterate over the packets
         foreach ($this->packets_response as $response) {
             // Check to see if we had a preg_match error
-            if (($match = preg_match("#^(.*)\\\\queryid\\\\([^\\\\]+)(\\\\|$)#", $response, $matches)) === false
+            if (
+                ($match = preg_match("#^(.*)\\\\queryid\\\\([^\\\\]+)(\\\\|$)#", $response, $matches)) === false
                 || $match !== 1
             ) {
                 throw new ProtocolException(__METHOD__ . " An error occurred while parsing the packets for 'queryid'");
             }
 
             // Multiply so we move the decimal point out of the way, if there is one
-            $key = (int)((float)$matches[2] * 1000);
+            $key = (int) ((float) $matches[2] * 1000);
 
             // Add this packet to the processed
             $processed[$key] = $matches[1];
@@ -99,17 +100,18 @@ class Gamespy extends Protocol
     /**
      * Handle processing the status buffer
      *
-     * @return array
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    protected function processStatus(Buffer $buffer)
+    protected function processStatus(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
 
-        // By default dedicted
+        // By default, dedicted
         $result->add('dedicated', 1);
 
-        // Lets peek and see if the data starts with a \
+        // Let's peek and see if the data starts with a \
         if ($buffer->lookAhead() === '\\') {
             // Burn the first one
             $buffer->skip();
@@ -132,14 +134,14 @@ class Gamespy extends Protocol
                 $key = $data[$x];
                 $val = $data[$x + 1];
 
-                // Check for <variable>_<count> variable (i.e players)
+                // Check for <variable>_<count> variable (i.e. players)
                 if (($suffix = strrpos($key, '_')) !== false && is_numeric(substr($key, $suffix + 1))) {
                     // See if this is a team designation
                     if (str_starts_with($key, 'teamname')) {
                         $result->addTeam('teamname', $val);
                         $numTeams++;
                     } else {
-                        // Its a player
+                        // It's a player
                         if (str_starts_with($key, 'playername')) {
                             $numPlayers++;
                         }

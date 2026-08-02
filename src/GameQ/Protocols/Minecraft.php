@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -40,7 +41,6 @@ namespace GameQ\Protocols;
  */
 class Minecraft extends Gamespy3
 {
-
     /**
      * String name of this protocol class
      */

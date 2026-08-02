@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -29,27 +30,23 @@ use GameQ\Server;
  */
 class Stripcolors extends Base
 {
-
     /**
      * Apply this filter
      *
-     * @return mixed
+     * @param array<string, mixed> $result
+     * @return array<string, mixed>
      */
-    public function apply(array $result, Server $server): mixed
+    public function apply(array $result, Server $server): array
     {
-
         // No result passed so just return
-        if (empty($result)) {
+        if ($result === []) {
             return $result;
         }
 
         //$data = [];
         //$data['raw'][ $server->id() ] = $result;
 
-        $protocol = $server->protocol();
-        if ($protocol === null) {
-            return $result;
-        }
+        $protocol = $server->protocolInstance();
 
         // Switch based on the base (not game) protocol
         switch ($protocol->getProtocol()) {
@@ -58,27 +55,20 @@ class Stripcolors extends Base
             case 'gta5m':
             case 'doom3':
                 array_walk_recursive($result, [$this, 'stripQuake']);
+
                 break;
             case 'unreal2':
             case 'ut3':
             case 'gamespy3':  //not sure if gamespy3 supports ut colors but won't hurt
             case 'gamespy2':
                 array_walk_recursive($result, [$this, 'stripUnreal']);
+
                 break;
             case 'source':
                 array_walk_recursive($result, [$this, 'stripSource']);
+
                 break;
         }
-
-        /*$data['filtered'][ $server->id() ] = $result;
-        file_put_contents(
-            sprintf(
-                '%s/../../../tests/Filters/Providers/Stripcolors\%s_1.json',
-                __DIR__,
-                $server->protocol()->getProtocol()
-            ),
-            json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR)
-        );*/
 
         // Return the stripped result
         return $result;

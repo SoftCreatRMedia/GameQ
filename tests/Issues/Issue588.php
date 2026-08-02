@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -29,11 +30,13 @@ use GameQ\Tests\TestBase;
  */
 class Issue588 extends TestBase
 {
+    private \GameQ\GameQ $stub;
+
     /**
      * Setup to create our stub
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         $this->stub = new \GameQ\GameQ();
     }
@@ -41,10 +44,10 @@ class Issue588 extends TestBase
     /**
      * Test for issue where hostnames are not correctly resolved to IP
      */
-    public function test1()
+    public function test1(): void
     {
         \GameQ\Tests\MockDNS::mockHosts([
-            'game.samp-mobile.com' => '1.2.3.4'
+            'game.samp-mobile.com' => '1.2.3.4',
         ]);
 
         // Test single add server
@@ -55,11 +58,11 @@ class Issue588 extends TestBase
 
         // Check if the server was added
         $servers = $this->stub->getServers();
-        $this->assertCount(1, $servers);
+        self::assertCount(1, $servers);
 
         $server = $servers[key($servers)];
 
         // Check that the server resolved hostname
-        $this->assertEquals('1.2.3.4', $server->ip);
+        self::assertEquals('1.2.3.4', $server->ip);
     }
 }

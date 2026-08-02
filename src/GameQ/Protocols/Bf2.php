@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -26,7 +27,6 @@ namespace GameQ\Protocols;
  */
 class Bf2 extends Gamespy3
 {
-
     /**
      * String name of this protocol class
      */
@@ -51,7 +51,7 @@ class Bf2 extends Gamespy3
     /**
      * BF2 has a different query packet to send than "normal" Gamespy 3
      *
-     * @var array
+     * @var array<string, string>
      */
     protected array $packets = [
         self::PACKET_ALL => "\xFE\xFD\x00\x10\x20\x30\x40\xFF\xFF\xFF\x01",

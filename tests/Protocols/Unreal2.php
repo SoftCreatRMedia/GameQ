@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,16 +26,16 @@ class Unreal2 extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Unreal2
+     * @var \GameQ\Protocols\Unreal2
      */
-    protected $stub;
+    protected \GameQ\Protocols\Unreal2 $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_DETAILS => "\x79\x00\x00\x00\x00",
         \GameQ\Protocol::PACKET_RULES   => "\x79\x00\x00\x00\x01",
         \GameQ\Protocol::PACKET_PLAYERS => "\x79\x00\x00\x00\x02",
@@ -43,9 +44,9 @@ class Unreal2 extends Base
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Unreal2();
@@ -54,19 +55,19 @@ class Unreal2 extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test invalid packet type without debug
      */
-    public function testInvalidPacketType()
+    public function testInvalidPacketType(): void
     {
         // Read in a ut2004 source file
-        $source = file_get_contents(sprintf('%s/Providers/Ut2004/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Ut2004/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("\x80\x00\x00\x00\x00", "\x80\x00\x00\x00\x07", $source);
@@ -74,19 +75,19 @@ class Unreal2 extends Base
         // Should show up as offline
         $testResult = $this->queryTest('127.0.0.1:7777', 'unreal2', explode(PHP_EOL . '||' . PHP_EOL, $source), false);
 
-        $this->assertFalse($testResult['gq_online']);
+        self::assertFalse($testResult['gq_online']);
     }
 
     /**
      * Test for invalid packet type in response
      */
-    public function testInvalidPacketTypeDebug()
+    public function testInvalidPacketTypeDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Unreal2::processResponse response type '8000000007' is not valid");
+        $this->expectExceptionMessageContains("GameQ\Protocols\Unreal2::processResponse response type '8000000007' is not valid");
 
         // Read in a ut2004 source file
-        $source = file_get_contents(sprintf('%s/Providers/Ut2004/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Ut2004/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("\x80\x00\x00\x00\x00", "\x80\x00\x00\x00\x07", $source);

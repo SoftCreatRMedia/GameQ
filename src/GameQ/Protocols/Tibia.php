@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,9 +19,10 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
 use GameQ\Result;
-use GameQ\Exception\ProtocolException;
+use SimpleXMLElement;
 
 /**
  * Tibia Protocol Class
@@ -34,7 +36,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Tibia extends Protocol
 {
-
     /**
      * Array of packets we want to query.
      */
@@ -87,16 +88,16 @@ class Tibia extends Protocol
     /**
      * Process the response for the Tibia server
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Merge the response packets
         $xmlString = implode('', $this->packets_response);
 
         // Check to make sure this is will decode into a valid XML Document
-        if (($xmlDoc = @simplexml_load_string($xmlString)) === false) {
+        if (($xmlDoc = @simplexml_load_string($xmlString, SimpleXMLElement::class, LIBXML_NONET)) === false) {
             throw new ProtocolException(__METHOD__ . " Unable to load XML string.");
         }
 
@@ -114,11 +115,11 @@ class Tibia extends Protocol
                 }
 
                 // Add the result
-                $result->add($key, (string)$value);
+                $result->add($key, (string) $value);
             }
         }
 
-        $result->add("motd", (string)$xmlDoc->motd);
+        $result->add("motd", (string) $xmlDoc->motd);
 
         unset($xmlDoc);
 

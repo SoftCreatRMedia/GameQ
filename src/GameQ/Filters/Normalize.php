@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -27,22 +28,23 @@ use GameQ\Server;
  */
 class Normalize extends Base
 {
-
     /**
      * Holds the protocol specific normalize information
+     *
+     * @var array<string, array<string, string|list<string>>>
      */
     protected array $normalize = [];
 
     /**
      * Apply this filter
      *
-     * @return mixed
+     * @param array<string, mixed> $result
+     * @return array<string, mixed>
      */
-    public function apply(array $result, Server $server): mixed
+    public function apply(array $result, Server $server): array
     {
-
         // No result passed so just return
-        if (empty($result)) {
+        if ($result === []) {
             return $result;
         }
 
@@ -50,36 +52,45 @@ class Normalize extends Base
         //$data['raw'][$server->id()] = $result;
 
         // Grab the normalize for this protocol for the specific server
-        $this->normalize = $server->protocol()->getNormalize();
+        $protocol = $server->protocolInstance();
+        $this->normalize = $protocol->getNormalize();
 
         // Do general information
-        $result = array_merge($result, $this->check('general', $result));
+        foreach ($this->check('general', $result) as $property => $value) {
+            $result[$property] = $value;
+        }
 
         // Do player information
-        if (isset($result['players']) && count($result['players']) > 0) {
+        if (isset($result['players']) && is_array($result['players']) && $result['players'] !== []) {
             // Iterate
             foreach ($result['players'] as $key => $player) {
-                $result['players'][$key] = array_merge($player, $this->check('player', $player));
+                if (is_array($player)) {
+                    foreach ($this->check('player', $player) as $property => $value) {
+                        $player[$property] = $value;
+                    }
+
+                    $result['players'][$key] = $player;
+                }
             }
         } else {
             $result['players'] = [];
         }
 
         // Do team information
-        if (isset($result['teams']) && count($result['teams']) > 0) {
+        if (isset($result['teams']) && is_array($result['teams']) && $result['teams'] !== []) {
             // Iterate
             foreach ($result['teams'] as $key => $team) {
-                $result['teams'][$key] = array_merge($team, $this->check('team', $team));
+                if (is_array($team)) {
+                    foreach ($this->check('team', $team) as $property => $value) {
+                        $team[$property] = $value;
+                    }
+
+                    $result['teams'][$key] = $team;
+                }
             }
         } else {
             $result['teams'] = [];
         }
-
-        //$data['filtered'][$server->id()] = $result;
-        /*file_put_contents(
-            sprintf('%s/../../../tests/Filters/Providers/Normalize/%s_1.json', __DIR__, $server->protocol()->getProtocol()),
-            json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR)
-        );*/
 
         // Return the normalized result
         return $result;
@@ -88,19 +99,19 @@ class Normalize extends Base
     /**
      * Check a section for normalization
      *
-     * @param $section
-     * @param $data
-     *
-     * @return array
+     * @param string $section
+     * @param array<array-key, mixed> $data
+     * @return array<string, mixed>
      */
-    protected function check($section, $data)
+    protected function check(string $section, array $data): array
     {
-
         // Normalized return array
         $normalized = [];
 
-        if (isset($this->normalize[$section]) && !empty($this->normalize[$section])) {
-            foreach ($this->normalize[$section] as $property => $raw) {
+        $rules = $this->normalize[$section] ?? [];
+
+        if ($rules !== []) {
+            foreach ($rules as $property => $raw) {
                 // Default the value for the new key as null
                 $value = null;
 
@@ -109,6 +120,7 @@ class Normalize extends Base
                     foreach ($raw as $check) {
                         if (array_key_exists($check, $data)) {
                             $value = $data[$check];
+
                             break;
                         }
                     }

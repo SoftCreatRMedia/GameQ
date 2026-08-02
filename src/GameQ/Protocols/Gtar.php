@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -15,11 +16,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 namespace GameQ\Protocols;
 
 use GameQ\Exception\ProtocolException;
 use GameQ\Result;
 use GameQ\Server;
+use JsonException;
 
 /**
  * Grand Theft Auto Rage Protocol Class
@@ -29,13 +32,14 @@ use GameQ\Server;
  *
  * @author K700 <admin@fianna.ru>
  * @author Austin Bischoff <austin@codebeard.com>
+ * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Gtar extends Http
 {
     /**
      * Packets to send
      *
-     * @var array
+     * @var array<string, string>
      */
     protected array $packets = [
         self::PACKET_STATUS => "GET /master/ HTTP/1.0\r\nHost: cdn.rage.mp\r\nAccept: */*\r\n\r\n",
@@ -92,14 +96,8 @@ class Gtar extends Http
 
     public function beforeSend(Server $server): void
     {
-        // Loop over the packets and update them
-        foreach ($this->packets as $packetType => $packet) {
-            // Fill out the packet with the server info
-            $this->packets[$packetType] = sprintf($packet, $server->ip . ':' . $server->port_query);
-        }
-
-        $this->realIp = $server->ip;
-        $this->realPortQuery = $server->port_query;
+        $this->realIp = $server->ip();
+        $this->realPortQuery = $server->portQuery();
 
         // Override the existing settings
         $server->ip = 'cdn.rage.mp';
@@ -109,31 +107,57 @@ class Gtar extends Http
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // No response, assume offline
-        if (empty($this->packets_response)) {
+        if ($this->packets_response === []) {
             return [
                 'gq_address'    => $this->realIp,
                 'gq_port_query' => $this->realPortQuery,
             ];
         }
 
-        // Implode and rip out the JSON
-        preg_match('/\{(.*)\}/ms', implode('', $this->packets_response), $matches);
+        $response = $this->extractHttpBody(implode('', $this->packets_response), 'RageMP');
 
-        // Return should be JSON, let's validate
-        if (!isset($matches[0]) || ($json = json_decode($matches[0])) === null) {
-            throw new ProtocolException("JSON response from Gtar protocol is invalid.");
+        try {
+            $json = json_decode(trim($response), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new ProtocolException('JSON response from Gtar protocol is invalid.', 0, $exception);
         }
 
-        $address = $this->realIp.':'.$this->realPortQuery;
-        $server = $json->$address;
+        if ($this->realIp === null || $this->realPortQuery === null) {
+            throw new ProtocolException('The original RageMP server address has not been initialized.');
+        }
 
-        if (empty($server)) {
+        $address = $this->realIp . ':' . $this->realPortQuery;
+        $server = null;
+        $network = null;
+
+        if (is_array($json)) {
+            $server = $json[$address] ?? null;
+
+            if (!is_array($server)) {
+                foreach ($json as $networkData) {
+                    if (!is_array($networkData) || !is_array($networkData['servers'] ?? null)) {
+                        continue;
+                    }
+
+                    foreach ($networkData['servers'] as $serverData) {
+                        if (is_array($serverData) && ($serverData['id'] ?? null) === $address) {
+                            $server = $serverData;
+                            $network = $networkData;
+
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!is_array($server) || $server === []) {
             return [
                 'gq_address'    => $this->realIp,
                 'gq_port_query' => $this->realPortQuery,
@@ -148,11 +172,32 @@ class Gtar extends Http
         $result->add('gq_address', $this->realIp);
         $result->add('gq_port_query', $this->realPortQuery);
 
+        $playerData = is_array($server['players'] ?? null) ? $server['players'] : [];
+        $gameMode = $network['gamemode'] ?? $server['gamemode'] ?? null;
+        $website = $network['url'] ?? $server['url'] ?? null;
+        $language = $network['lang'] ?? $server['lang'] ?? null;
+        $numPlayers = $playerData['amount'] ?? $server['players'] ?? null;
+        $maxPlayers = $playerData['max'] ?? $server['maxplayers'] ?? null;
+        $peak = $playerData['peak'] ?? $server['peak'] ?? null;
+
+        if (is_array($language)) {
+            $language = reset($language);
+        }
+
         // Add server items
-        $result->add('hostname', $server->name);
-        $result->add('mod', $server->gamemode);
-        $result->add('numplayers', $server->players);
-        $result->add('maxplayers', $server->maxplayers);
+        $result->add('hostname', $server['name'] ?? null);
+        $result->add('mod', $gameMode);
+        $result->add('numplayers', $numPlayers);
+        $result->add('maxplayers', $maxPlayers);
+        $result->add('website', $website);
+        $result->add('language', $language);
+        $result->add('peak', $peak);
+        $result->add('gq_joinlink', 'rage://v/connect/' . $address);
+        $result->add('ragemp_name', $server['name'] ?? null);
+        $result->add('ragemp_game_mode', $gameMode);
+        $result->add('ragemp_website', $website);
+        $result->add('ragemp_primary_language', $language);
+        $result->add('ragemp_player_peak', $peak);
 
         return $result->fetch();
     }

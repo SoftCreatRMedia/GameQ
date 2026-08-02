@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -28,8 +29,17 @@ class Result
 {
     /**
      * Formatted server response
+     *
+     * @var array<string, mixed>
      */
     protected array $result = [];
+
+    /**
+     * Next candidate row for each field in list-shaped player/team results.
+     *
+     * @var array<string, array<string, int>>
+     */
+    private array $subPositions = [];
 
     /**
      * Adds variable to results
@@ -37,6 +47,7 @@ class Result
     public function add(string $name, mixed $value): void
     {
         $this->result[$name] = $value;
+        unset($this->subPositions[$name]);
     }
 
     /**
@@ -60,36 +71,60 @@ class Result
      */
     public function addSub(string $sub, string $key, mixed $value): void
     {
-        // Nothing of this type yet, set an empty array
         if (!isset($this->result[$sub]) || !is_array($this->result[$sub])) {
             $this->result[$sub] = [];
+            unset($this->subPositions[$sub]);
         }
+
+        $entries = &$this->result[$sub];
 
         // Find the first entry that doesn't have this variable
         $found = false;
-        $count = count($this->result[$sub]);
-        foreach ($this->result[$sub] as $i => $iValue) {
-            if (!isset($iValue[$key])) {
-                $this->result[$sub][$i][$key] = $value;
-                $found = true;
-                break;
+
+        if (array_is_list($entries)) {
+            $position = $this->subPositions[$sub][$key] ?? 0;
+
+            for ($entryCount = count($entries); $position < $entryCount; ++$position) {
+                if (is_array($entries[$position]) && !isset($entries[$position][$key])) {
+                    $entries[$position][$key] = $value;
+                    $found = true;
+
+                    if ($value !== null) {
+                        $this->subPositions[$sub][$key] = $position + 1;
+                    }
+
+                    break;
+                }
+            }
+        } else {
+            foreach ($entries as $i => $iValue) {
+                if (is_array($iValue) && !isset($iValue[$key])) {
+                    $iValue[$key] = $value;
+                    $entries[$i] = $iValue;
+                    $found = true;
+
+                    break;
+                }
             }
         }
 
         // Not found, create a new entry
         if (!$found) {
-            $this->result[$sub][][$key] = $value;
-        }
+            $entries[] = [$key => $value];
 
-        unset($count);
+            if ($value !== null && array_is_list($entries)) {
+                $this->subPositions[$sub][$key] = count($entries);
+            }
+        }
     }
 
     /**
      * Return all stored results
+     *
+     * @return array<string, mixed>
      */
     public function fetch(): array
     {
-
         return $this->result;
     }
 
@@ -98,7 +133,6 @@ class Result
      */
     public function get(string $var): mixed
     {
-
         return $this->result[$var] ?? null;
     }
 }

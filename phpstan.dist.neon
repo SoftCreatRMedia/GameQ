@@ -1,4 +1,8 @@
 parameters:
-    level: 5
+    level: max
+    phpVersion: 80100
     paths:
         - src
+        - tests
+    reportUnmatchedIgnoredErrors: true
+    tmpDir: build/cache/phpstan

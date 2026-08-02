@@ -1,12 +1,11 @@
 <?php
 
-
 namespace GameQ\Protocols;
 
-use GameQ\Protocol;
 use GameQ\Buffer;
-use GameQ\Result;
 use GameQ\Exception\ProtocolException;
+use GameQ\Protocol;
+use GameQ\Result;
 
 /**
  * Quake3 Protocol Class
@@ -17,6 +16,8 @@ use GameQ\Exception\ProtocolException;
  */
 class Quake3 extends Protocol
 {
+    use QuakeResponseTrait;
+
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -77,44 +78,12 @@ class Quake3 extends Protocol
     ];
 
     /**
-     * Handle response from the server
-     *
-     * @return mixed
-     * @throws ProtocolException
-     */
-    public function processResponse(): mixed
-    {
-        // Make a buffer
-        $buffer = new Buffer(implode('', $this->packets_response));
-
-        // Grab the header
-        $header = $buffer->readString("\x0A");
-
-        // Figure out which packet response this is
-        if (empty($header) || !array_key_exists($header, $this->responses)) {
-            throw new ProtocolException(__METHOD__ . " response type '" . bin2hex($header) . "' is not valid");
-        }
-
-        return $this->{$this->responses[$header]}($buffer);
-    }
-
-    protected function processStatus(Buffer $buffer)
-    {
-        // We need to split the data and offload
-        $results = $this->processServerInfo(new Buffer($buffer->readString("\x0A")));
-        return array_merge_recursive(
-            $results,
-            $this->processPlayers(new Buffer($buffer->getBuffer()))
-        );
-    }
-
-    /**
      * Handle processing the server information
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processServerInfo(Buffer $buffer)
+    protected function processServerInfo(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
@@ -127,7 +96,7 @@ class Quake3 extends Protocol
             // Add result
             $result->add(
                 trim($buffer->readString('\\')),
-                $this->convertToUtf8(trim($buffer->readStringMulti(['\\', "\x0a"])))
+                $this->convertToUtf8(trim($buffer->readStringMulti(['\\', "\x0a"]))),
             );
         }
 
@@ -137,10 +106,10 @@ class Quake3 extends Protocol
     /**
      * Handle processing of player data
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
         // Some games do not have a number of current players
         $playerCount = 0;

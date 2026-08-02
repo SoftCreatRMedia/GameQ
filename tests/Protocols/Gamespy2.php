@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -23,16 +24,16 @@ class Gamespy2 extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Gamespy2
+     * @var \GameQ\Protocols\Gamespy2
      */
-    protected $stub;
+    protected \GameQ\Protocols\Gamespy2 $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_DETAILS => "\xFE\xFD\x00\x43\x4F\x52\x59\xFF\x00\x00",
         \GameQ\Protocol::PACKET_PLAYERS => "\xFE\xFD\x00\x43\x4F\x52\x58\x00\xFF\xFF",
     ];
@@ -40,9 +41,9 @@ class Gamespy2 extends Base
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Gamespy2();
@@ -51,9 +52,9 @@ class Gamespy2 extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 }

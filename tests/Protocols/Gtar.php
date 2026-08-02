@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -23,25 +24,25 @@ class Gtar extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Gtan
+     * @var \GameQ\Protocols\Gtar
      */
-    protected $stub;
+    protected \GameQ\Protocols\Gtar $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_STATUS => "GET /master/ HTTP/1.0\r\nHost: cdn.rage.mp\r\nAccept: */*\r\n\r\n",
     ];
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Gtar();
@@ -50,31 +51,54 @@ class Gtar extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test responses for Grand Theft Auto Network
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'gtar',
-            $responses
+            $responses,
+        );
+        $result[$server]['gq_joinlink'] = 'rage://v/connect/' . $server;
+
+        foreach ($result[$server] as $key => $value) {
+            self::assertArrayHasKey($key, $testResult);
+            self::assertEqualsDelta($value, $testResult[$key], 0.000000001);
+        }
+    }
+
+    public function testExtendedMasterListDataIsExposed(): void
+    {
+        $result = $this->queryTest(
+            '203.0.113.5:22005',
+            'gtar',
+            [
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                . "Nel: {\"report_to\":\"cf-nel\"}\r\n\r\n"
+                . '{"203.0.113.5:22005":{"name":"Rage Test","gamemode":"Roleplay",'
+                . '"url":"https://example.com","lang":"en","players":12,"peak":24,"maxplayers":128}}',
+            ],
         );
 
-        $this->assertEqualsDelta($result[ $server ], $testResult, 0.000000001);
+        self::assertSame('rage://v/connect/203.0.113.5:22005', $result['gq_joinlink']);
+        self::assertSame('https://example.com', $result['ragemp_website']);
+        self::assertSame('en', $result['ragemp_primary_language']);
+        self::assertSame(24, $result['ragemp_player_peak']);
     }
 }

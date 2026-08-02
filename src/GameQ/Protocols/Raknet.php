@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -33,6 +34,8 @@ use GameQ\Server;
  */
 class Raknet extends Protocol
 {
+    private const STATUS_PACKET_FORMAT = "\x01%s%s\x02\x00\x00\x00\x00\x00\x00\x00";
+
     /**
      * The magic string that is sent to get access to the server information
      */
@@ -48,7 +51,7 @@ class Raknet extends Protocol
      * Each key should correspond to a defined method in this or a parent class
      */
     protected array $packets = [
-        self::PACKET_STATUS => "\x01%s%s\x02\x00\x00\x00\x00\x00\x00\x00", // Format time, magic,
+        self::PACKET_STATUS => self::STATUS_PACKET_FORMAT,
     ];
 
     /**
@@ -73,22 +76,22 @@ class Raknet extends Protocol
     {
         // Update the server status packet before it is sent
         $this->packets[self::PACKET_STATUS] = sprintf(
-            $this->packets[self::PACKET_STATUS],
-            pack('Q', time()),
-            self::OFFLINE_MESSAGE_DATA_ID
+            self::STATUS_PACKET_FORMAT,
+            pack('J', time()),
+            self::OFFLINE_MESSAGE_DATA_ID,
         );
     }
 
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-        // Merge the response array into a buffer. Unknown if this protocol does split packets or not
-        $buffer = new Buffer(implode($this->packets_response));
+        // An unconnected pong is returned as a single datagram
+        $buffer = new Buffer(implode('', $this->packets_response), Buffer::NUMBER_TYPE_BIGENDIAN);
 
         // Read first character from response. It should match below
         $header = $buffer->read();
@@ -99,7 +102,7 @@ class Raknet extends Protocol
                 '%s The header returned "%s" does not match the expected header of "%s"',
                 __METHOD__,
                 bin2hex($header),
-                bin2hex(self::ID_UNCONNECTED_PONG)
+                bin2hex(self::ID_UNCONNECTED_PONG),
             ));
         }
 
@@ -118,33 +121,44 @@ class Raknet extends Protocol
                 '%s The magic value returned "%s" does not match the expected value of "%s"',
                 __METHOD__,
                 bin2hex($magicCheck),
-                bin2hex(self::OFFLINE_MESSAGE_DATA_ID)
+                bin2hex(self::OFFLINE_MESSAGE_DATA_ID),
             ));
         }
 
-        // According to docs the next character is supposed to be used for a length and string for the following
-        // character for the MOTD but it appears to be implemented incorrectly
-        // Burn the next two characters instead of trying to do anything useful with them
-        $buffer->skip(2);
+        // The server information is prefixed with its unsigned 16-bit length
+        $serverInfoLength = $buffer->readInt16();
+        $remainingLength = $buffer->getLength();
+
+        if ($serverInfoLength !== $remainingLength) {
+            throw new ProtocolException(sprintf(
+                'RakNet response declares %d server information bytes, but contains %d.',
+                $serverInfoLength,
+                $remainingLength,
+            ));
+        }
 
         // Set the result to a new result instance
         $result = new Result();
 
         // Here on is server information delimited by semicolons (;)
-        $info = explode(';', $buffer->getBuffer());
+        $info = explode(';', $buffer->read($serverInfoLength));
+
+        if (count($info) < 10) {
+            throw new ProtocolException('RakNet response does not contain all required server information.');
+        }
 
         $result->add('edition', $info[0]);
         $result->add('motd_line_1', $info[1]);
-        $result->add('protocol_version', (int)$info[2]);
+        $result->add('protocol_version', (int) $info[2]);
         $result->add('version', $info[3]);
-        $result->add('num_players', (int)$info[4]);
-        $result->add('max_players', (int)$info[5]);
+        $result->add('num_players', (int) $info[4]);
+        $result->add('max_players', (int) $info[5]);
         $result->add('server_uid', $info[6]);
         $result->add('motd_line_2', $info[7]);
         $result->add('gamemode', $info[8]);
-        $result->add('gamemode_numeric', (int)$info[9]);
-        $result->add('port_ipv4', (isset($info[10])) ? (int)$info[10] : null);
-        $result->add('port_ipv6', (isset($info[11])) ? (int)$info[11] : null);
+        $result->add('gamemode_numeric', (int) $info[9]);
+        $result->add('port_ipv4', (isset($info[10])) ? (int) $info[10] : null);
+        $result->add('port_ipv6', (isset($info[11])) ? (int) $info[11] : null);
         $result->add('dedicated', 1);
 
         unset($header, $serverGUID, $magicCheck, $info);

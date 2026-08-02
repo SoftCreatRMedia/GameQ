@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -30,7 +31,6 @@ use GameQ\Result;
  */
 class Etqw extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -84,15 +84,18 @@ class Etqw extends Protocol
             'score' => 'score',
             'time'  => 'time',
         ],
+        'team'    => [
+            'name' => 'name',
+        ],
     ];
 
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // In case it comes back as multiple packets (it shouldn't)
         $buffer = new Buffer(implode('', $this->packets_response));
@@ -106,7 +109,7 @@ class Etqw extends Protocol
         }
 
         // Offload the call
-        return $this->{$this->responses[$response_type]}($buffer);
+        return $this->processResponseMethod($this->responses[$response_type], $buffer);
     }
 
     /*
@@ -116,10 +119,10 @@ class Etqw extends Protocol
     /**
      * Handle processing the status response
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processStatus(Buffer $buffer)
+    protected function processStatus(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
@@ -134,7 +137,8 @@ class Etqw extends Protocol
         while ($buffer->getLength()) {
             $var = str_replace('si_', '', $buffer->readString());
             $val = $buffer->readString();
-            if (empty($var) && empty($val)) {
+
+            if ($var === '' && $val === '') {
                 break;
             }
             // Add the server prop
@@ -168,11 +172,14 @@ class Etqw extends Protocol
     /**
      * Parse players out of the status ex response
      *
+     * @param Buffer $buffer
+     * @param Result $result
+     * @return void
      * @throws ProtocolException
      */
-    protected function parsePlayers(Buffer $buffer, Result $result)
+    protected function parsePlayers(Buffer $buffer, Result $result): void
     {
-        // By default there are 0 players
+        // By default, there are 0 players
         $players = 0;
 
         // Iterate over the players until we run out
@@ -196,21 +203,35 @@ class Etqw extends Protocol
     /**
      * Handle parsing extra player data
      *
+     * @param Buffer $buffer
+     * @param Result $result
+     * @return void
      * @throws ProtocolException
      */
-    protected function parsePlayersExtra(Buffer $buffer, Result $result)
+    protected function parsePlayersExtra(Buffer $buffer, Result $result): void
     {
+        $teams = [];
+
         // Iterate over the extra player info
         while (($id = $buffer->readInt8()) !== 32) {
             $result->addPlayer('total_xp', $buffer->readFloat32());
-            $result->addPlayer('teamname', $buffer->readString());
+            $teamName = $buffer->readString();
+            $result->addPlayer('teamname', $teamName);
             $result->addPlayer('total_kills', $buffer->readInt32());
             $result->addPlayer('total_deaths', $buffer->readInt32());
+
+            if ($teamName !== '') {
+                $teams[$teamName] = true;
+            }
         }
 
-        // @todo: Add team stuff
+        foreach (array_keys($teams) as $teamName) {
+            $result->addTeam('name', $teamName);
+        }
+
+        $result->add('num_teams', count($teams));
 
         // Free some memory
-        unset($id);
+        unset($id, $teamName, $teams);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,7 +19,10 @@
 
 namespace GameQ\Tests\Filters;
 
+use DirectoryIterator;
 use GameQ\Tests\TestBase;
+use JsonException;
+use RuntimeException;
 
 /**
  * Class for testing Filters Base
@@ -27,17 +31,19 @@ use GameQ\Tests\TestBase;
  */
 class Base extends TestBase
 {
-
     /**
      * Load up the provider data for the specific filter type
      *
-     * @return array
+     * @return list<array{
+     *     non-empty-string,
+     *     non-empty-array<string, array<string, mixed>>,
+     *     non-empty-array<string, array<string, mixed>>
+     * }>
      */
-    public function loadData()
+    public static function loadData(): array
     {
-
         // Explode the class that called to avoid strict error
-        $class = explode('\\', get_called_class());
+        $class = explode('\\', static::class);
 
         // Determine the folder to grab the provider files and results from
         $providersLookup = sprintf('%s/Providers/%s/', __DIR__, array_pop($class));
@@ -46,7 +52,7 @@ class Base extends TestBase
         $providers = [ ];
 
         // Grab all of the test files for this filter
-        $files = new \DirectoryIterator($providersLookup);
+        $files = new DirectoryIterator($providersLookup);
 
         // Iterate over the files in this path
         foreach ($files as $fileinfo) {
@@ -56,30 +62,65 @@ class Base extends TestBase
             }
 
             // Split the filename
-            list($protocol, $index) = explode('_', $fileinfo->getFilename());
+            [$protocol] = explode('_', $fileinfo->getFilename(), 2);
+            $path = $fileinfo->getRealPath();
 
-            unset($index);
+            if ($protocol === '' || $path === false) {
+                throw new RuntimeException('Invalid filter fixture filename.');
+            }
 
             // Get the data
-            if (($data = json_decode(file_get_contents($fileinfo->getRealPath()), true)) === null
-                && json_last_error() !== JSON_ERROR_NONE
-            ) {
-                // Skip
-                continue;
+            try {
+                $data = json_decode(self::fixtureContents($path), true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $exception) {
+                throw new RuntimeException("Invalid filter fixture '$path'.", 0, $exception);
+            }
+
+            if (!is_array($data)) {
+                throw new RuntimeException("Filter fixture '$path' must contain an object.");
             }
 
             // Add the provider
             $providers[] = [
                 $protocol,
-                $data['raw'],
-                $data['filtered']
+                self::normalizeResults($data['raw'] ?? null, $path),
+                self::normalizeResults($data['filtered'] ?? null, $path),
             ];
         }
 
-        // Clear some memory
-        unset($files, $fileinfo, $providersLookup);
-
         return $providers;
+    }
+
+    /**
+     * @return non-empty-array<string, array<string, mixed>>
+     */
+    private static function normalizeResults(mixed $value, string $path): array
+    {
+        if (!is_array($value) || $value === []) {
+            throw new RuntimeException("Filter fixture '$path' has no results.");
+        }
+
+        $results = [];
+
+        foreach ($value as $host => $result) {
+            if (!is_string($host) || !is_array($result)) {
+                throw new RuntimeException("Filter fixture '$path' contains an invalid server result.");
+            }
+
+            $normalizedResult = [];
+
+            foreach ($result as $key => $item) {
+                if (!is_string($key)) {
+                    throw new RuntimeException("Filter fixture '$path' contains an invalid result key.");
+                }
+
+                $normalizedResult[$key] = $item;
+            }
+
+            $results[$host] = $normalizedResult;
+        }
+
+        return $results;
     }
 
     /*
@@ -89,16 +130,20 @@ class Base extends TestBase
     /**
      * Test options setting on construct
      */
-    public function testOptions()
+    public function testOptions(): void
     {
-
         $options = [
             'option1' => 'value1',
             'option2' => 'value2',
         ];
 
-        $mock = $this->getMockForAbstractClass('\GameQ\Filters\Base', [ $options ]);
+        $mock = new class ($options) extends \GameQ\Filters\Base {
+            public function apply(array $result, \GameQ\Server $server): array
+            {
+                return $result;
+            }
+        };
 
-        $this->assertEquals($options, $mock->getOptions());
+        self::assertEquals($options, $mock->getOptions());
     }
 }

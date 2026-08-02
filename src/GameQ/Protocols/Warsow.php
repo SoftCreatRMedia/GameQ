@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -48,10 +49,10 @@ class Warsow extends Quake3
     /**
      * Handle player info, different than quake3 base
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();

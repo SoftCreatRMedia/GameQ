@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,25 +26,50 @@ namespace GameQ\Tests\Protocols;
  */
 class Rust extends Base
 {
+    public function testKeywordParsingIsIndependentOfOrder(): void
+    {
+        $protocol = new class extends \GameQ\Protocols\Rust {
+            /**
+             * @param list<string> $keywords
+             * @return array<string, mixed>
+             */
+            public function parseForTest(array $keywords): array
+            {
+                return $this->parseKeywords($keywords);
+            }
+        };
+
+        self::assertSame([
+            'server.keywords' => [
+                'cp' => '42',
+                'mp' => '100',
+                'oxide' => true,
+            ],
+            'server.tags' => ['weekly'],
+            'unhandled.tags' => ['unknown'],
+            'region' => 'EU',
+        ], $protocol->parseForTest(['cp42', 'weekly', 'EU', 'mp100', 'oxide', 'unknown']));
+    }
+
     /**
      * Test responses for Rust
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'rust',
-            $responses
+            $responses,
         );
 
-        $this->assertEqualsDelta($result[$server], $testResult, 0.000000001);
+        self::assertEqualsDelta($result[$server], $testResult, 0.000000001);
     }
 }

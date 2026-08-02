@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,16 +26,16 @@ class Ffow extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Ffow
+     * @var \GameQ\Protocols\Ffow
      */
-    protected $stub;
+    protected \GameQ\Protocols\Ffow $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_CHALLENGE => "\xFF\xFF\xFF\xFF\x57",
         \GameQ\Protocol::PACKET_RULES     => "\xFF\xFF\xFF\xFF\x56%s",
         \GameQ\Protocol::PACKET_PLAYERS   => "\xFF\xFF\xFF\xFF\x55%s",
@@ -44,9 +45,9 @@ class Ffow extends Base
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Ffow();
@@ -55,16 +56,16 @@ class Ffow extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test the challenge application
      */
-    public function testChallengeapply()
+    public function testChallengeapply(): void
     {
         $packets = $this->packets;
 
@@ -78,16 +79,16 @@ class Ffow extends Base
         // Apply the challenge
         $this->stub->challengeParseAndApply($challenge_buffer);
 
-        $this->assertEquals($packets, $this->stub->getPacket());
+        self::assertEquals($packets, $this->stub->getPacket());
     }
 
     /**
      * Test invalid packet type without debug
      */
-    public function testInvalidPacketType()
+    public function testInvalidPacketType(): void
     {
         // Read in a ffow source file
-        $source = file_get_contents(sprintf('%s/Providers/Ffow/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Ffow/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("\xFF\xFF\xFF\xFF\x49\x02", "\xFF\xFF\xFF\xFF\x48\x02", $source);
@@ -95,19 +96,21 @@ class Ffow extends Base
         // Should show up as offline
         $testResult = $this->queryTest('127.0.0.1:5476', 'ffow', explode(PHP_EOL . '||' . PHP_EOL, $source), false);
 
-        $this->assertFalse($testResult['gq_online']);
+        self::assertFalse($testResult['gq_online']);
     }
 
     /**
      * Test for invalid packet type in response
      */
-    public function testInvalidPacketTypeDebug()
+    public function testInvalidPacketTypeDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Ffow::processResponse response type 'ffffffff4802' is not valid");
+        $this->expectExceptionMessageContains(
+            "GameQ\Protocols\Ffow::processResponse response type 'ffffffff48' is not valid",
+        );
 
         // Read in a ffow source file
-        $source = file_get_contents(sprintf('%s/Providers/Ffow/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Ffow/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("\xFF\xFF\xFF\xFF\x49\x02", "\xFF\xFF\xFF\xFF\x48\x02", $source);
@@ -119,22 +122,63 @@ class Ffow extends Base
     /**
      * Test responses for Ffow
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'ffow',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
+    }
+
+    /**
+     * Test a populated player-list response using the documented wire format
+     */
+    public function testSplitPlayers(): void
+    {
+        $response = pack('N', 0xFFFFFFFF)
+            . "\x44\x01\x07Alice\x00"
+            . pack('N', 123)
+            . pack('G', 12.5)
+            . pack('nN', 42, 123456)
+            . "\x01";
+        $splitAt = intdiv(strlen($response) + 1, 2);
+        $chunks = [
+            substr($response, 0, $splitAt),
+            substr($response, $splitAt),
+        ];
+        $packets = [
+            pack('NNCCn', 0xFFFFFFFE, 123, 0, 2, 1248) . $chunks[0],
+            pack('NNCCn', 0xFFFFFFFE, 123, 1, 2, 1248) . $chunks[1],
+        ];
+
+        $this->stub->packetResponse(array_reverse($packets));
+
+        self::assertSame(
+            [
+                'players' => [
+                    [
+                        'id' => 7,
+                        'name' => 'Alice',
+                        'score' => 123,
+                        'time' => 12.5,
+                        'ping' => 42,
+                        'profile_id' => 123456,
+                        'team' => 1,
+                    ],
+                ],
+            ],
+            $this->stub->processResponse(),
+        );
     }
 }

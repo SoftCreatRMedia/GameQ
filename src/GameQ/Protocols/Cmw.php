@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -19,7 +20,7 @@
 namespace GameQ\Protocols;
 
 /**
- * Class Css
+ * Class Cmw
  *
  * @package GameQ\Protocols
  * @author Sascha Greuel <sascha@softcreatr.de>

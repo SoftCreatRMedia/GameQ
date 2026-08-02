@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,16 +26,16 @@ class Cs2d extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Cs2d
+     * @var \GameQ\Protocols\Cs2d
      */
-    protected $stub;
+    protected \GameQ\Protocols\Cs2d $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_STATUS => "\x01\x00\xFB\x01",
         \GameQ\Protocol::PACKET_PLAYERS => "\x01\x00\xFB\x05",
     ];
@@ -42,9 +43,9 @@ class Cs2d extends Base
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Cs2d();
@@ -53,19 +54,19 @@ class Cs2d extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test invalid packet type without debug
      */
-    public function testInvalidPacketType()
+    public function testInvalidPacketType(): void
     {
         // Read in a ut2004 source file
-        $source = file_get_contents(sprintf('%s/Providers/Cs2d/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Cs2d/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("\x01\x00\xFB\x01", "\x01\x00\xFB\x02", $source);
@@ -73,19 +74,19 @@ class Cs2d extends Base
         // Should show up as offline
         $testResult = $this->queryTest('127.0.0.1:36963', 'cs2d', explode(PHP_EOL . '||' . PHP_EOL, $source), false);
 
-        $this->assertFalse($testResult['gq_online']);
+        self::assertFalse($testResult['gq_online']);
     }
 
     /**
      * Test for invalid packet type in response
      */
-    public function testInvalidPacketTypeDebug()
+    public function testInvalidPacketTypeDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Cs2d::processResponse response type '80000000' is not valid");
+        $this->expectExceptionMessageContains("GameQ\Protocols\Cs2d::processResponse response type '80000000' is not valid");
 
         // Read in a ut2004 source file
-        $source = file_get_contents(sprintf('%s/Providers/Ut2004/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Ut2004/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("\x01\x00\xFB\x01", "\x01\x00\xFB\x02", $source);
@@ -97,22 +98,22 @@ class Cs2d extends Base
     /**
      * Test responses for Cs2d
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'cs2d',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

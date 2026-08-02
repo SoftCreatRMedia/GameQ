@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,42 +19,39 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Buffer;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
-use GameQ\Buffer;
 use GameQ\Result;
 
 /**
  * Battlefield Bad Company 2 Protocol Class
  *
- * NOTE:  There are no qualifiers to the response packets sent back from the server as to which response packet
- * belongs to which query request.  For now this class assumes the responses are in the same order as the order in
- * which the packets were sent to the server.  If this assumption turns out to be wrong there is easy way to tell which
- * response belongs to which query.  Hopefully this assumption will hold true as it has in my testing.
+ * The response packets do not contain request IDs. Their payload structures are used to associate them with the
+ * corresponding query instead.
  *
  * @package GameQ\Protocols
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Bfbc2 extends Protocol
 {
-
     /**
      * Array of packets we want to query.
      */
     protected array $packets = [
         self::PACKET_VERSION => "\x00\x00\x00\x00\x18\x00\x00\x00\x01\x00\x00\x00\x07\x00\x00\x00version\x00",
         self::PACKET_STATUS  => "\x00\x00\x00\x00\x1b\x00\x00\x00\x01\x00\x00\x00\x0a\x00\x00\x00serverInfo\x00",
-        self::PACKET_PLAYERS => "\x00\x00\x00\x00\x24\x00\x00\x00\x02\x00\x00\x00\x0b\x00\x00\x00listPlayers\x00\x03\x00\x00\x00\x61ll\x00",
+        self::PACKET_PLAYERS => "\x00\x00\x00\x00\x24\x00\x00\x00\x02\x00\x00\x00"
+            . "\x0b\x00\x00\x00listPlayers\x00\x03\x00\x00\x00\x61ll\x00",
     ];
 
     /**
-     * Use the response flag to figure out what method to run
-     *
+     * Response processors keyed by payload type
      */
     protected array $responses = [
-        "processVersion",
-        "processDetails",
-        "processPlayers",
+        'version' => 'processVersion',
+        'details' => 'processDetails',
+        'players' => 'processPlayers',
     ];
 
     /**
@@ -114,17 +112,16 @@ class Bfbc2 extends Protocol
     /**
      * Process the response for the StarMade server
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Holds the results sent back
-        $results = [];
+        $resultSets = [];
 
         // Iterate over the response packets
-        // @todo: This protocol has no packet ordering, ids or anyway to identify which packet coming back belongs to which initial call.
-        foreach ($this->packets_response as $i => $packet) {
+        foreach ($this->packets_response as $packet) {
             // Create a new buffer
             $buffer = new Buffer($packet);
 
@@ -140,16 +137,13 @@ class Bfbc2 extends Protocol
                 throw new ProtocolException(__METHOD__ . " packet length does not match expected length!");
             }
 
-            // We assume the packets are coming back in the same order as sent, this maybe incorrect...
-            $results = array_merge(
-                $results,
-                call_user_func_array([$this, $this->responses[$i]], [$buffer])
-            );
+            $responseType = $this->identifyResponse($this->decode(clone $buffer));
+            $resultSets[] = $this->processResponseMethod($this->responses[$responseType], $buffer);
         }
 
-        unset($buffer, $packetLength);
+        unset($buffer, $packetLength, $responseType);
 
-        return $results;
+        return array_merge(...$resultSets);
     }
 
     /*
@@ -159,12 +153,11 @@ class Bfbc2 extends Protocol
     /**
      * Decode the buffer into a usable format
      *
-     * @return array
+     * @return list<string>
      * @throws ProtocolException
      */
-    protected function decode(Buffer $buffer)
+    protected function decode(Buffer $buffer): array
     {
-
         $items = [];
 
         // Get the number of words in this buffer
@@ -176,69 +169,117 @@ class Bfbc2 extends Protocol
             $buffer->readInt32();
 
             // Just read the string
-            $items[$i] = $buffer->readString();
+            $items[] = $buffer->readString();
         }
 
         return $items;
     }
 
     /**
+     * Identify a response from its decoded payload structure.
+     *
+     * @param list<string> $items
+     * @return 'details'|'players'|'version'
+     * @throws ProtocolException
+     */
+    protected function identifyResponse(array $items): string
+    {
+        if (($items[0] ?? null) !== 'OK') {
+            throw new ProtocolException('BFBC2 response did not indicate success.');
+        }
+
+        if (count($items) === 3) {
+            return 'version';
+        }
+
+        if (isset($items[1]) && ctype_digit($items[1])) {
+            $tagCount = (int) $items[1];
+            $playerCountIndex = $tagCount + 2;
+            $playerCount = $items[$playerCountIndex] ?? null;
+
+            if (
+                is_string($playerCount)
+                && ctype_digit($playerCount)
+                && count($items) === $playerCountIndex + 1 + ($tagCount * (int) $playerCount)
+            ) {
+                return 'players';
+            }
+        }
+
+        if (
+            isset($items[2], $items[3], $items[6], $items[7], $items[8])
+            && ctype_digit($items[2])
+            && ctype_digit($items[3])
+            && ctype_digit($items[6])
+            && ctype_digit($items[7])
+            && ctype_digit($items[8])
+        ) {
+            return 'details';
+        }
+
+        throw new ProtocolException('Unable to identify BFBC2 response payload.');
+    }
+
+    /**
+     * Add the fields shared by Frostbite server-info responses.
+     *
+     * @param list<string> $items
+     */
+    protected function populateCommonDetails(array $items, Result $result): int
+    {
+        $result->add('dedicated', 1);
+        $result->add('hostname', $items[1]);
+        $result->add('num_players', (int) $items[2]);
+        $result->add('max_players', (int) $items[3]);
+        $result->add('gametype', $items[4]);
+        $result->add('map', $items[5]);
+        $result->add('roundsplayed', (int) $items[6]);
+        $result->add('roundstotal', (int) $items[7]);
+        $result->add('num_teams', (int) $items[8]);
+
+        $indexCurrent = 9;
+        $teamCount = (int) $items[8];
+
+        for ($id = 1; $id <= $teamCount; $id++, $indexCurrent++) {
+            $result->addTeam('tickets', $items[$indexCurrent]);
+            $result->addTeam('id', $id);
+        }
+
+        return $indexCurrent;
+    }
+
+    /**
      * Process the server details
      *
-     * @return array
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    protected function processDetails(Buffer $buffer)
+    protected function processDetails(Buffer $buffer): array
     {
-
         // Decode into items
         $items = $this->decode($buffer);
 
         // Set the result to a new result instance
         $result = new Result();
 
-        // Server is always dedicated
-        $result->add('dedicated', 1);
-
-        // These are the same no matter what mode the server is in
-        $result->add('hostname', $items[1]);
-        $result->add('num_players', (int)$items[2]);
-        $result->add('max_players', (int)$items[3]);
-        $result->add('gametype', $items[4]);
-        $result->add('map', $items[5]);
-        $result->add('roundsplayed', (int)$items[6]);
-        $result->add('roundstotal', (int)$items[7]);
-        $result->add('num_teams', (int)$items[8]);
-
-        // Set the current index
-        $index_current = 9;
-
-        // Pull the team count
-        $teamCount = $result->get('num_teams');
-
-        // Loop for the number of teams found, increment along the way
-        for ($id = 1; $id <= $teamCount; $id++, $index_current++) {
-            // Shows the tickets
-            $result->addTeam('tickets', $items[$index_current]);
-            // We add an id so we know which team this is
-            $result->addTeam('id', $id);
-        }
+        $index_current = $this->populateCommonDetails($items, $result);
 
         // Get and set the rest of the data points.
-        $result->add('targetscore', (int)$items[$index_current]);
+        $result->add('targetscore', (int) $items[$index_current]);
         $result->add('online', 1); // Forced true, shows accepting players
-        $result->add('ranked', (($items[$index_current + 2] == 'true') ? 1 : 0));
-        $result->add('punkbuster', (($items[$index_current + 3] == 'true') ? 1 : 0));
-        $result->add('password', (($items[$index_current + 4] == 'true') ? 1 : 0));
-        $result->add('uptime', (int)$items[$index_current + 5]);
-        $result->add('roundtime', (int)$items[$index_current + 6]);
+        $result->add('ranked', (($items[$index_current + 2] === 'true') ? 1 : 0));
+        $result->add('punkbuster', (($items[$index_current + 3] === 'true') ? 1 : 0));
+        $result->add('password', (($items[$index_current + 4] === 'true') ? 1 : 0));
+        $result->add('uptime', (int) $items[$index_current + 5]);
+        $result->add('roundtime', (int) $items[$index_current + 6]);
         $result->add('mod', $items[$index_current + 7]);
 
         $result->add('ip_port', $items[$index_current + 9]);
         $result->add('punkbuster_version', $items[$index_current + 10]);
-        $result->add('join_queue', (($items[$index_current + 11] == 'true') ? 1 : 0));
+        $result->add('join_queue', (($items[$index_current + 11] === 'true') ? 1 : 0));
         $result->add('region', $items[$index_current + 12]);
 
-        unset($items, $index_current, $teamCount);
+        unset($items, $index_current);
 
         return $result->fetch();
     }
@@ -246,9 +287,10 @@ class Bfbc2 extends Protocol
     /**
      * Process the server version
      *
-     * @return array
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    protected function processVersion(Buffer $buffer)
+    protected function processVersion(Buffer $buffer): array
     {
         // Decode into items
         $items = $this->decode($buffer);
@@ -266,11 +308,11 @@ class Bfbc2 extends Protocol
     /**
      * Process the players
      *
-     * @return array
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
-
         // Decode into items
         $items = $this->decode($buffer);
 
@@ -278,13 +320,13 @@ class Bfbc2 extends Protocol
         $result = new Result();
 
         // Number of data points per player
-        $numTags = $items[1];
+        $numTags = (int) $items[1];
 
         // Grab the tags for each player
         $tags = array_slice($items, 2, $numTags);
 
         // Get the player count
-        $playerCount = $items[$numTags + 2];
+        $playerCount = (int) $items[$numTags + 2];
 
         // Iterate over the index until we run out of players
         for ($i = 0, $x = $numTags + 3; $i < $playerCount; $i++, $x += $numTags) {

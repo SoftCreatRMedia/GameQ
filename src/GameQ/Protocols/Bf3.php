@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,9 +19,8 @@
 
 namespace GameQ\Protocols;
 
-use GameQ\Exception\ProtocolException;
-use GameQ\Protocol;
 use GameQ\Buffer;
+use GameQ\Exception\ProtocolException;
 use GameQ\Result;
 
 /**
@@ -31,17 +31,16 @@ use GameQ\Result;
  * @package GameQ\Protocols
  * @author  Austin Bischoff <austin@codebeard.com>
  */
-class Bf3 extends Protocol
+class Bf3 extends Bfbc2
 {
-
     /**
      * Array of packets we want to query.
      */
     protected array $packets = [
         self::PACKET_STATUS  => "\x00\x00\x00\x21\x1b\x00\x00\x00\x01\x00\x00\x00\x0a\x00\x00\x00serverInfo\x00",
         self::PACKET_VERSION => "\x00\x00\x00\x22\x18\x00\x00\x00\x01\x00\x00\x00\x07\x00\x00\x00version\x00",
-        self::PACKET_PLAYERS =>
-            "\x00\x00\x00\x23\x24\x00\x00\x00\x02\x00\x00\x00\x0b\x00\x00\x00listPlayers\x00\x03\x00\x00\x00\x61ll\x00",
+        self::PACKET_PLAYERS
+            => "\x00\x00\x00\x23\x24\x00\x00\x00\x02\x00\x00\x00\x0b\x00\x00\x00listPlayers\x00\x03\x00\x00\x00\x61ll\x00",
     ];
 
     /**
@@ -86,40 +85,15 @@ class Bf3 extends Protocol
     protected int $port_diff = 22000;
 
     /**
-     * Normalize settings for this protocol
-     */
-    protected array $normalize = [
-        // General
-        'general' => [
-            // target       => source
-            'dedicated'  => 'dedicated',
-            'hostname'   => 'hostname',
-            'mapname'    => 'map',
-            'maxplayers' => 'max_players',
-            'numplayers' => 'num_players',
-            'password'   => 'password',
-        ],
-        'player'  => [
-            'name'  => 'name',
-            'score' => 'score',
-            'ping'  => 'ping',
-        ],
-        'team'    => [
-            'score' => 'tickets',
-        ],
-    ];
-
-    /**
      * Process the response for the StarMade server
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
         // Holds the results sent back
-        $results = [];
+        $resultSets = [];
 
         // Holds the processed packets after having been reassembled
         $processed = [];
@@ -164,13 +138,10 @@ class Bf3 extends Protocol
             }
 
             // Now we need to call the proper method
-            $results = array_merge(
-                $results,
-                call_user_func_array([$this, $this->responses[$sequence_id]], [$buffer])
-            );
+            $resultSets[] = $this->processResponseMethod($this->responses[$sequence_id], $buffer);
         }
 
-        return $results;
+        return array_merge(...$resultSets);
     }
 
     /*
@@ -178,150 +149,48 @@ class Bf3 extends Protocol
      */
 
     /**
-     * Decode the buffer into a usable format
-     *
-     * @return array
-     * @throws ProtocolException
-     */
-    protected function decode(Buffer $buffer)
-    {
-
-        $items = [];
-
-        // Get the number of words in this buffer
-        $itemCount = $buffer->readInt32();
-
-        // Loop over the number of items
-        for ($i = 0; $i < $itemCount; $i++) {
-            // Length of the string
-            $buffer->readInt32();
-
-            // Just read the string
-            $items[$i] = $buffer->readString();
-        }
-
-        return $items;
-    }
-
-    /**
      * Process the server details
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processDetails(Buffer $buffer)
+    protected function processDetails(Buffer $buffer): array
     {
-
         // Decode into items
         $items = $this->decode($buffer);
 
         // Set the result to a new result instance
         $result = new Result();
 
-        // Server is always dedicated
-        $result->add('dedicated', 1);
+        $index_current = $this->populateCommonDetails($items, $result);
 
-        // These are the same no matter what mode the server is in
-        $result->add('hostname', $items[1]);
-        $result->add('num_players', (int)$items[2]);
-        $result->add('max_players', (int)$items[3]);
-        $result->add('gametype', $items[4]);
-        $result->add('map', $items[5]);
-        $result->add('roundsplayed', (int)$items[6]);
-        $result->add('roundstotal', (int)$items[7]);
-        $result->add('num_teams', (int)$items[8]);
+        $this->populateBattlefield3Details($items, $result, $index_current);
 
-        // Set the current index
-        $index_current = 9;
-
-        // Pull the team count
-        $teamCount = $result->get('num_teams');
-
-        // Loop for the number of teams found, increment along the way
-        for ($id = 1; $id <= $teamCount; $id++, $index_current++) {
-            // Shows the tickets
-            $result->addTeam('tickets', $items[$index_current]);
-            // We add an id so we know which team this is
-            $result->addTeam('id', $id);
-        }
-
-        // Get and set the rest of the data points.
-        $result->add('targetscore', (int)$items[$index_current]);
-        $result->add('online', 1); // Forced true, it seems $words[$index_current + 1] is always empty
-        $result->add('ranked', (int)$items[$index_current + 2]);
-        $result->add('punkbuster', (int)$items[$index_current + 3]);
-        $result->add('password', (int)$items[$index_current + 4]);
-        $result->add('uptime', (int)$items[$index_current + 5]);
-        $result->add('roundtime', (int)$items[$index_current + 6]);
-        // Added in R9
-        $result->add('ip_port', $items[$index_current + 7]);
-        $result->add('punkbuster_version', $items[$index_current + 8]);
-        $result->add('join_queue', (int)$items[$index_current + 9]);
-        $result->add('region', $items[$index_current + 10]);
-        $result->add('pingsite', $items[$index_current + 11]);
-        $result->add('country', $items[$index_current + 12]);
-        // Added in R29, No docs as of yet
-        $result->add('quickmatch', (int)$items[$index_current + 13]); // Guessed from research
-
-        unset($items, $index_current, $teamCount);
+        // Battlefield 3 added the quick-match flag at this position in R29
+        $result->add('quickmatch', (int) $items[$index_current + 13]);
 
         return $result->fetch();
     }
 
     /**
-     * Process the server version
+     * Add the fields shared by Battlefield 3 and 4 server-info responses.
      *
-     * @return array
-     * @throws ProtocolException
+     * @param list<string> $items
      */
-    protected function processVersion(Buffer $buffer)
+    protected function populateBattlefield3Details(array $items, Result $result, int $indexCurrent): void
     {
-
-        // Decode into items
-        $items = $this->decode($buffer);
-
-        // Set the result to a new result instance
-        $result = new Result();
-
-        $result->add('version', $items[2]);
-
-        unset($items);
-
-        return $result->fetch();
-    }
-
-    /**
-     * Process the players
-     *
-     * @return array
-     * @throws ProtocolException
-     */
-    protected function processPlayers(Buffer $buffer)
-    {
-
-        // Decode into items
-        $items = $this->decode($buffer);
-
-        // Set the result to a new result instance
-        $result = new Result();
-
-        // Number of data points per player
-        $numTags = $items[1];
-
-        // Grab the tags for each player
-        $tags = array_slice($items, 2, $numTags);
-
-        // Get the player count
-        $playerCount = $items[$numTags + 2];
-
-        // Iterate over the index until we run out of players
-        for ($i = 0, $x = $numTags + 3; $i < $playerCount; $i++, $x += $numTags) {
-            // Loop over the player tags and extract the info for that tag
-            foreach ($tags as $index => $tag) {
-                $result->addPlayer($tag, $items[($x + $index)]);
-            }
-        }
-
-        return $result->fetch();
+        $result->add('targetscore', (int) $items[$indexCurrent]);
+        $result->add('online', 1); // Forced true, the following response item is always empty
+        $result->add('ranked', (int) $items[$indexCurrent + 2]);
+        $result->add('punkbuster', (int) $items[$indexCurrent + 3]);
+        $result->add('password', (int) $items[$indexCurrent + 4]);
+        $result->add('uptime', (int) $items[$indexCurrent + 5]);
+        $result->add('roundtime', (int) $items[$indexCurrent + 6]);
+        $result->add('ip_port', $items[$indexCurrent + 7]);
+        $result->add('punkbuster_version', $items[$indexCurrent + 8]);
+        $result->add('join_queue', (int) $items[$indexCurrent + 9]);
+        $result->add('region', $items[$indexCurrent + 10]);
+        $result->add('pingsite', $items[$indexCurrent + 11]);
+        $result->add('country', $items[$indexCurrent + 12]);
     }
 }

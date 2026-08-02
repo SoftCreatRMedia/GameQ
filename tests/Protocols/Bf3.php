@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,28 +26,28 @@ class Bf3 extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Bf3
+     * @var \GameQ\Protocols\Bf3
      */
-    protected $stub;
+    protected \GameQ\Protocols\Bf3 $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_STATUS  => "\x00\x00\x00\x21\x1b\x00\x00\x00\x01\x00\x00\x00\x0a\x00\x00\x00serverInfo\x00",
         \GameQ\Protocol::PACKET_VERSION => "\x00\x00\x00\x22\x18\x00\x00\x00\x01\x00\x00\x00\x07\x00\x00\x00version\x00",
-        \GameQ\Protocol::PACKET_PLAYERS =>
-            "\x00\x00\x00\x23\x24\x00\x00\x00\x02\x00\x00\x00\x0b\x00\x00\x00listPlayers\x00\x03\x00\x00\x00\x61ll\x00",
+        \GameQ\Protocol::PACKET_PLAYERS
+            => "\x00\x00\x00\x23\x24\x00\x00\x00\x02\x00\x00\x00\x0b\x00\x00\x00listPlayers\x00\x03\x00\x00\x00\x61ll\x00",
     ];
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Bf3();
@@ -55,22 +56,22 @@ class Bf3 extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test for invalid packet length
      */
-    public function testInvalidPacketLengthDebug()
+    public function testInvalidPacketLengthDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Bf3::processResponse packet length does not match expected length!");
+        $this->expectExceptionMessageContains("GameQ\Protocols\Bf3::processResponse packet length does not match expected length!");
 
         // Read in a css source file
-        $source = file_get_contents(sprintf('%s/Providers/Bf3/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Bf3/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("\x00\x00\x00a%", "\x00\x00\x00a!", $source);
@@ -82,22 +83,22 @@ class Bf3 extends Base
     /**
      * Test responses for Battlefield 3
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'bf3',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

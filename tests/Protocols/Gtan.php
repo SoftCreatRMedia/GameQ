@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -23,25 +24,25 @@ class Gtan extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Gtan
+     * @var \GameQ\Protocols\Gtan
      */
-    protected $stub;
+    protected \GameQ\Protocols\Gtan $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_STATUS => "GET /gtan/api.php?ip=%s&raw HTTP/1.0\r\nHost: multiplayerhosting.info\r\nAccept: */*\r\n\r\n",
     ];
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Gtan();
@@ -50,31 +51,31 @@ class Gtan extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test responses for Grand Theft Auto Network
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'gtan',
-            $responses
+            $responses,
         );
 
-        $this->assertEqualsDelta($result[ $server ], $testResult, 0.000000001);
+        self::assertEqualsDelta($result[ $server ], $testResult, 0.000000001);
     }
 }

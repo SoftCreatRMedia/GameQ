@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -32,7 +33,6 @@ use GameQ\Result;
  */
 class Ship extends Source
 {
-
     /**
      * String name of this protocol class
      */
@@ -48,12 +48,11 @@ class Ship extends Source
      *
      * Player response has unknown data after the last real player
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 

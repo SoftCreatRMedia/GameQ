@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -19,6 +20,8 @@
 namespace GameQ\Tests;
 
 use GameQ\Exception\ProtocolException;
+use ReflectionException;
+use ReflectionMethod;
 
 /**
  * Buffer test class
@@ -31,25 +34,23 @@ class Buffer extends TestBase
      * Build a mock Buffer
      *
      * @param string $data
-     * @param string $number_type
+     * @param string $numberType
      *
      * @return \GameQ\Buffer
      */
-    protected function buildBuffer($data, $number_type = 'm')
+    protected function buildBuffer(string $data, string $numberType = 'm'): \GameQ\Buffer
     {
-
-        return new \GameQ\Buffer($data, $number_type);
+        return new \GameQ\Buffer($data, $numberType);
     }
 
     /**
      * Data provider for all of the integer testing. Loads external files since the file format has to be in
      * ascii format for the tests to work correctly
      *
-     * @return array
+     * @return list<array{non-empty-string, non-empty-string, non-empty-string, int|float}>
      */
-    public function integerDataProvider()
+    public static function integerDataProvider(): array
     {
-
         // Make the base path for the data to test since it has to be in ascii form
         $basePath = sprintf('%s/Providers/Buffer', __DIR__);
 
@@ -112,68 +113,68 @@ class Buffer extends TestBase
     /**
      * Test general methods for the Buffer class
      */
-    public function testGeneral()
+    public function testGeneral(): void
     {
         $data = "Some Kind of buffer";
 
         $buffer = $this->buildBuffer($data);
 
         // Test buffer and string are equal
-        $this->assertEquals($data, $buffer->getData(), 'Test string and buffer are not the same');
+        self::assertEquals($data, $buffer->getData(), 'Test string and buffer are not the same');
 
         // Test length is set correctly
-        $this->assertEquals(strlen($data), $buffer->getLength(), 'Test string and buffer length do not match');
+        self::assertEquals(strlen($data), $buffer->getLength(), 'Test string and buffer length do not match');
     }
 
     /**
      * Test various buffer reads
      *
-     * @depends testGeneral
      */
-    public function testRead()
+    #[\PHPUnit\Framework\Attributes\Depends('testGeneral')]
+    public function testRead(): void
     {
         $data = "Buffer of data";
 
         $buffer = $this->buildBuffer($data);
 
         // Test look ahead default
-        $this->assertEquals(substr($data, 0, 1), $buffer->lookAhead());
+        self::assertEquals($data[0], $buffer->lookAhead());
 
         // Test longer look ahead
-        $this->assertEquals(substr($data, 0, 4), $buffer->lookAhead(4));
+        self::assertEquals(substr($data, 0, 4), $buffer->lookAhead(4));
 
         // Test default is one character
-        $this->assertEquals(substr($data, 0, 1), $buffer->read());
+        self::assertEquals($data[0], $buffer->read());
 
         // Test multiple character read
-        $this->assertEquals(substr($data, 1, 5), $buffer->read(5));
+        self::assertEquals(substr($data, 1, 5), $buffer->read(5));
 
         // Read last character out of the buffer
-        $this->assertEquals(substr($data, -1, 1), $buffer->readLast());
+        self::assertEquals($data[strlen($data) - 1], $buffer->readLast());
 
         // Get the remainder of the buffer
-        $this->assertEquals(substr($data, 6, -1), $buffer->getBuffer());
+        self::assertEquals(substr($data, 6, -1), $buffer->getBuffer());
     }
 
     /**
      * Test for index positions
      *
-     * @depends testRead
      */
-    public function testPosition()
+    #[\PHPUnit\Framework\Attributes\Depends('testRead')]
+    public function testPosition(): void
     {
         $data = "Some like My Strings...";
 
         $buffer = $this->buildBuffer($data);
 
         // Test basic index position
-        $this->assertEquals(0, $buffer->getPosition());
+        self::assertEquals(0, $buffer->getPosition());
 
         // Jump in the index
         $buffer->jumpto(8);
 
         // Make sure the index is correct returned
-        $this->assertEquals(8, $buffer->getPosition());
+        self::assertEquals(8, $buffer->getPosition());
 
         // Reset
         $buffer->jumpto(0);
@@ -181,23 +182,23 @@ class Buffer extends TestBase
         // Test skip default
         $buffer->skip();
 
-        $this->assertEquals(substr($data, 1), $buffer->getBuffer());
+        self::assertEquals(substr($data, 1), $buffer->getBuffer());
 
         // Skip multiple
         $buffer->skip(3);
 
-        $this->assertEquals(substr($data, 4), $buffer->getBuffer());
+        self::assertEquals(substr($data, 4), $buffer->getBuffer());
     }
 
     /**
      * Test for proper read exception
      *
-     * @depends testRead
      */
-    public function testReadException()
+    #[\PHPUnit\Framework\Attributes\Depends('testRead')]
+    public function testReadException(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("Unable to read length=6 from buffer. Bad protocol format or return?");
+        $this->expectExceptionMessageContains("Unable to read length=6 from buffer. Bad protocol format or return?");
 
         $buffer = $this->buildBuffer("12345");
 
@@ -205,49 +206,89 @@ class Buffer extends TestBase
         $buffer->read(6);
     }
 
+    public function testNegativeReadIsRejected(): void
+    {
+        $this->expectException(ProtocolException::class);
+
+        $this->buildBuffer('12345')->read(-1);
+    }
+
+    public function testOutOfBoundsSkipIsRejected(): void
+    {
+        $this->expectException(ProtocolException::class);
+
+        $this->buildBuffer('12345')->skip(6);
+    }
+
+    public function testReadLastRejectsAnEmptyBuffer(): void
+    {
+        $this->expectException(ProtocolException::class);
+
+        $this->buildBuffer('')->readLast();
+    }
+
     /**
      * Test reading some strings
      *
-     * @depends testRead
      */
-    public function testReadString()
+    #[\PHPUnit\Framework\Attributes\Depends('testRead')]
+    public function testReadString(): void
     {
         $data = "This is string 1\x00This is string 2\x00";
 
         $buffer = $this->buildBuffer($data);
 
         // Read first
-        $this->assertEquals('This is string 1', $buffer->readString());
+        self::assertEquals('This is string 1', $buffer->readString());
 
         // Read again
-        $this->assertEquals('This is string 2', $buffer->readString());
+        self::assertEquals('This is string 2', $buffer->readString());
 
         // Reset the index
         $buffer->jumpto(0);
 
         // Test the read using non-default, this should return the whole string
-        $this->assertEquals($data, $buffer->readString("\xFF"));
+        self::assertEquals($data, $buffer->readString("\xFF"));
+    }
+
+    /**
+     * Test reading strings terminated by any of multiple delimiters.
+     */
+    public function testReadStringMulti(): void
+    {
+        $buffer = $this->buildBuffer("first\r\nsecond|remaining");
+        $delimiter = null;
+
+        self::assertSame('first', $buffer->readStringMulti(['|', "\r\n"], $delimiter));
+        self::assertSame("\r\n", $delimiter);
+        self::assertSame('second', $buffer->readStringMulti(['|', "\r\n"], $delimiter));
+        self::assertSame('|', $delimiter);
+        self::assertSame('remaining', $buffer->readStringMulti(['|', "\r\n", ''], $delimiter));
+        self::assertNull($delimiter);
+        self::assertSame(0, $buffer->getLength());
     }
 
     /**
      * Test number reads reads
      *
-     * @depends      testRead
-     * @dataProvider integerDataProvider
      *
-     * @param $method
-     * @param $number_type
-     * @param $file
-     * @param $expected
+     * @param non-empty-string $method
+     * @param non-empty-string $numberType
+     * @param non-empty-string $file
+     * @throws ProtocolException
+     * @throws ReflectionException
      */
-    public function testNumberReads($method, $number_type, $file, $expected)
+    #[\PHPUnit\Framework\Attributes\Depends('testRead')]
+    #[\PHPUnit\Framework\Attributes\DataProvider('integerDataProvider')]
+    public function testNumberReads(string $method, string $numberType, string $file, int|float $expected): void
     {
         // Make the buffer
-        $buffer = $this->buildBuffer(file_get_contents($file), $number_type);
+        $buffer = $this->buildBuffer(self::fixtureContents($file), $numberType);
 
         // Run the test
-        $this->assertEquals($expected, call_user_func_array([ $buffer, $method ], [ ]));
+        $reader = new ReflectionMethod($buffer, $method);
+        self::assertEquals($expected, $reader->invoke($buffer));
 
-        unset($buffer);
+        unset($buffer, $reader);
     }
 }

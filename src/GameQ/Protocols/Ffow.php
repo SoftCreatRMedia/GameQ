@@ -1,11 +1,10 @@
 <?php
 
-
 namespace GameQ\Protocols;
 
+use GameQ\Buffer;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
-use GameQ\Buffer;
 use GameQ\Result;
 
 /**
@@ -13,8 +12,8 @@ use GameQ\Result;
  *
  * Handles processing ffow servers
  *
- * Class is incomplete due to lack of players to test against.
- * http://wiki.hlsw.net/index.php/FFOW_Protocol
+ * Protocol specification:
+ * https://web.archive.org/web/20091002183549/http://wiki.hlsw.net/index.php/FFOW_Protocol
  *
  * @package GameQ\Protocols
  */
@@ -36,9 +35,9 @@ class Ffow extends Protocol
      *
      */
     protected array $responses = [
-        "\xFF\xFF\xFF\xFF\x49\x02" => 'processInfo', // I
-        "\xFF\xFF\xFF\xFF\x45\x00" => 'processRules', // E
-        "\xFF\xFF\xFF\xFF\x44\x00" => 'processPlayers', // D
+        "\xFF\xFF\xFF\xFF\x49" => 'processInfo', // I
+        "\xFF\xFF\xFF\xFF\x45" => 'processRules', // E
+        "\xFF\xFF\xFF\xFF\x44" => 'processPlayers', // D
     ];
 
     /**
@@ -85,7 +84,8 @@ class Ffow extends Protocol
         'player'  => [
             'name'  => 'name',
             'ping'  => 'ping',
-            'score' => 'frags',
+            'score' => 'score',
+            'time'  => 'time',
         ],
     ];
 
@@ -106,47 +106,49 @@ class Ffow extends Protocol
     /**
      * Handle response from the server
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Init results
-        $results = [];
+        $resultSets = [];
 
-        foreach ($this->packets_response as $response) {
-            $buffer = new Buffer($response);
+        foreach ($this->reassembleResponses() as $response) {
+            $buffer = new Buffer($response, Buffer::NUMBER_TYPE_BIGENDIAN);
 
             // Figure out what packet response this is for
-            $response_type = $buffer->read(6);
+            $response_type = $buffer->read(5);
 
             // Figure out which packet response this is
             if (!array_key_exists($response_type, $this->responses)) {
-                throw new ProtocolException(__METHOD__ . " response type '" . bin2hex($response_type) . "' is not valid");
+                throw new ProtocolException(
+                    __METHOD__ . " response type '" . bin2hex($response_type) . "' is not valid",
+                );
             }
 
             // Now we need to call the proper method
-            $results = array_merge(
-                $results,
-                call_user_func_array([$this, $this->responses[$response_type]], [$buffer])
-            );
+            $resultSets[] = $this->processResponseMethod($this->responses[$response_type], $buffer);
 
             unset($buffer);
         }
 
-        return $results;
+        return array_merge(...$resultSets);
     }
 
     /**
      * Handle processing the server information
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processInfo(Buffer $buffer)
+    protected function processInfo(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
+
+        // Network protocol version
+        $buffer->skip();
 
         $result->add('servername', $buffer->readString());
         $result->add('mapname', $buffer->readString());
@@ -157,8 +159,8 @@ class Ffow extends Protocol
         $result->add('port', $buffer->readInt16());
         $result->add('num_players', $buffer->readInt8());
         $result->add('max_players', $buffer->readInt8());
-        $result->add('dedicated', $buffer->readInt8());
-        $result->add('os', $buffer->readInt8());
+        $result->add('dedicated', $buffer->read());
+        $result->add('os', $buffer->read());
         $result->add('password', $buffer->readInt8());
         $result->add('anticheat', $buffer->readInt8());
         $result->add('average_fps', $buffer->readInt8());
@@ -172,25 +174,23 @@ class Ffow extends Protocol
     /**
      * Handle processing the server rules
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processRules(Buffer $buffer)
+    protected function processRules(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
 
-        // Burn extra header
-        $buffer->skip();
+        $ruleCount = $buffer->readInt16();
 
-        // Read rules until we run out of buffer
-        while ($buffer->getLength()) {
+        for ($index = 0; $index < $ruleCount; $index++) {
             $key = $buffer->readString();
+
             // Check for map
             if (str_contains($key, "Map:")) {
                 $result->addSub("maplist", "name", $buffer->readString());
-            } else // Regular rule
-            {
+            } else { // Regular rule
                 $result->add($key, $buffer->readString());
             }
         }
@@ -201,12 +201,98 @@ class Ffow extends Protocol
     /**
      * Handle processing of player data
      *
-     * @todo: Build this out when there is a server with players to test against
-     *
-     * @return array
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
-        return (new Result())->fetch();
+        $result = new Result();
+        $playerCount = $buffer->readInt8();
+
+        for ($index = 0; $index < $playerCount; $index++) {
+            $result->addPlayer('id', $buffer->readInt8());
+            $result->addPlayer('name', $buffer->readString());
+            $result->addPlayer('score', $buffer->readInt32Signed());
+            $result->addPlayer('time', $buffer->readFloat32());
+            $result->addPlayer('ping', $buffer->readInt16());
+            $result->addPlayer('profile_id', $buffer->readInt32());
+            $result->addPlayer('team', $buffer->readInt8());
+        }
+
+        return $result->fetch();
+    }
+
+    /**
+     * Reassemble FFOW responses that exceed a single UDP packet.
+     *
+     * @return list<string>
+     * @throws ProtocolException
+     */
+    protected function reassembleResponses(): array
+    {
+        $responses = [];
+
+        /** @var array<int, array{count: int, fragments: array<int, string>}> $groups */
+        $groups = [];
+
+        foreach ($this->packets_response as $response) {
+            $buffer = new Buffer($response, Buffer::NUMBER_TYPE_BIGENDIAN);
+            $header = $buffer->readInt32Signed();
+
+            if ($header === -1) {
+                $responses[] = $response;
+
+                continue;
+            }
+
+            if ($header !== -2) {
+                throw new ProtocolException('FFOW response has an invalid packet header.');
+            }
+
+            $requestId = $buffer->readInt32();
+            $packetNumber = $buffer->readInt8();
+            $packetCount = $buffer->readInt8();
+
+            // Maximum split size; the final fragment may be smaller
+            $buffer->readInt16();
+
+            if ($packetCount === 0 || $packetNumber >= $packetCount) {
+                throw new ProtocolException('FFOW split response contains an invalid packet number.');
+            }
+
+            if (!isset($groups[$requestId])) {
+                $groups[$requestId] = [
+                    'count' => $packetCount,
+                    'fragments' => [],
+                ];
+            }
+
+            if ($groups[$requestId]['count'] !== $packetCount) {
+                throw new ProtocolException('FFOW split response packets disagree on the packet count.');
+            }
+
+            if (isset($groups[$requestId]['fragments'][$packetNumber])) {
+                throw new ProtocolException('FFOW split response contains a duplicate packet number.');
+            }
+
+            $groups[$requestId]['fragments'][$packetNumber] = $buffer->getBuffer();
+        }
+
+        foreach ($groups as $group) {
+            if (count($group['fragments']) !== $group['count']) {
+                throw new ProtocolException('FFOW split response is missing one or more packets.');
+            }
+
+            ksort($group['fragments']);
+            $response = implode('', $group['fragments']);
+
+            if (!str_starts_with($response, "\xFF\xFF\xFF\xFF")) {
+                throw new ProtocolException('Reassembled FFOW response is missing its packet header.');
+            }
+
+            $responses[] = $response;
+        }
+
+        return $responses;
     }
 }

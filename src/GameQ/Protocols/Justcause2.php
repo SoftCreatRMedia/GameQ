@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -50,7 +51,7 @@ class Justcause2 extends Gamespy4
     /**
      * Change the packets used
      *
-     * @var array
+     * @var array<string, string>
      */
     protected array $packets = [
         self::PACKET_CHALLENGE => "\xFE\xFD\x09\x10\x20\x30\x40",
@@ -85,6 +86,8 @@ class Justcause2 extends Gamespy4
 
     /**
      * Overload so we can add in some static data points
+     *
+     * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer, Result $result): void
     {

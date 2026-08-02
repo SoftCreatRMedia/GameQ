@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -20,6 +21,7 @@ namespace GameQ\Protocols;
 
 use GameQ\Exception\ProtocolException;
 use GameQ\Result;
+use JsonException;
 
 /**
  * ECO Global Survival Protocol Class
@@ -31,7 +33,7 @@ class Eco extends Http
     /**
      * Packets to send
      *
-     * @var array
+     * @var array<string, string>
      */
     protected array $packets = [
         self::PACKET_STATUS => "GET /frontpage HTTP/1.0\r\nAccept: */*\r\n\r\n",
@@ -84,21 +86,33 @@ class Eco extends Http
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-        if (empty($this->packets_response)) {
+        if ($this->packets_response === []) {
             return [];
         }
 
         // Implode and rip out the JSON
-        preg_match('/\{(.*)\}/ms', implode('', $this->packets_response), $matches);
+        preg_match('/[{](.*)[}]/ms', implode('', $this->packets_response), $matches);
 
         // Return should be JSON, let's validate
-        if (!isset($matches[0]) || ($json = json_decode($matches[0])) === null) {
+        if (!isset($matches[0])) {
             throw new ProtocolException("JSON response from Eco server is invalid.");
+        }
+
+        try {
+            $json = json_decode($matches[0], true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new ProtocolException('JSON response from Eco server is invalid.', 0, $exception);
+        }
+
+        $info = is_array($json) ? ($json['Info'] ?? null) : null;
+
+        if (!is_array($info)) {
+            throw new ProtocolException("JSON response from Eco server does not contain an 'Info' object.");
         }
 
         $result = new Result();
@@ -106,8 +120,10 @@ class Eco extends Http
         // Server is always dedicated
         $result->add('dedicated', 1);
 
-        foreach ($json->Info as $info => $setting) {
-            $result->add(strtolower($info), $setting);
+        foreach ($info as $name => $setting) {
+            if (is_string($name)) {
+                $result->add(strtolower($name), $setting);
+            }
         }
 
         return $result->fetch();

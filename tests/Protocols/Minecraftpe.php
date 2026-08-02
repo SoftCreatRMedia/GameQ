@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -26,24 +27,45 @@ namespace GameQ\Tests\Protocols;
 class Minecraftpe extends Base
 {
     /**
+     * Use genuine Bedrock/RakNet captures; the historical MinecraftPE fixtures contained Java responses.
+     *
+     * @return list<array{list<string>, non-empty-array<string, array<string, mixed>>}>
+     */
+    public static function loadData(): array
+    {
+        $providers = Minecraftbe::loadData();
+
+        foreach ($providers as &$provider) {
+            foreach ($provider[1] as &$result) {
+                $result['gq_name'] = 'MinecraftPE';
+                $result['gq_type'] = 'minecraftpe';
+            }
+        }
+
+        unset($provider, $result);
+
+        return $providers;
+    }
+
+    /**
      * Test responses for Minecraft PE
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'minecraftpe',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

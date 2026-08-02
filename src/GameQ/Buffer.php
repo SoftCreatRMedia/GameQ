@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -14,8 +15,6 @@
  *
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- *
  */
 
 namespace GameQ;
@@ -35,7 +34,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Buffer
 {
-
     /**
      * Constants for the byte code types we need to read as
      */
@@ -74,7 +72,6 @@ class Buffer
      */
     public function getData(): string
     {
-
         return $this->data;
     }
 
@@ -83,7 +80,6 @@ class Buffer
      */
     public function getBuffer(): string
     {
-
         return substr($this->data, $this->index);
     }
 
@@ -92,19 +88,18 @@ class Buffer
      */
     public function getLength(): int
     {
-
         return max($this->length - $this->index, 0);
     }
 
     /**
      * Read from the buffer
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
     public function read(int $length = 1): string
     {
-
-        if (($length + $this->index) > $this->length) {
+        if ($length < 0 || ($length + $this->index) > $this->length) {
             throw new ProtocolException("Unable to read length=$length from buffer. Bad protocol format or return?");
         }
 
@@ -119,9 +114,15 @@ class Buffer
      *
      * Unlike the other read functions, this function actually removes
      * the character from the buffer.
+     *
+     * @phpstan-impure
+     * @throws ProtocolException
      */
     public function readLast(): string
     {
+        if ($this->length === 0) {
+            throw new ProtocolException('Unable to read the last byte from an empty buffer.');
+        }
 
         $len = strlen($this->data);
         $string = $this->data[strlen($this->data) - 1];
@@ -133,18 +134,29 @@ class Buffer
 
     /**
      * Look at the buffer, but don't remove
+     *
+     * @throws ProtocolException
      */
     public function lookAhead(int $length = 1): string
     {
+        if ($length < 0) {
+            throw new ProtocolException('Unable to look ahead by a negative length.');
+        }
 
         return substr($this->data, $this->index, $length);
     }
 
     /**
      * Skip forward in the buffer
+     *
+     * @phpstan-impure
+     * @throws ProtocolException
      */
     public function skip(int $length = 1): void
     {
+        if ($length < 0 || ($length + $this->index) > $this->length) {
+            throw new ProtocolException("Unable to skip length=$length in buffer. Bad protocol format or return?");
+        }
 
         $this->index += $length;
     }
@@ -155,8 +167,7 @@ class Buffer
      */
     public function jumpto(int $index): void
     {
-
-        $this->index = min($index, $this->length - 1);
+        $this->index = max(0, min($index, $this->length));
     }
 
     /**
@@ -164,7 +175,6 @@ class Buffer
      */
     public function getPosition(): int
     {
-
         return $this->index;
     }
 
@@ -173,6 +183,7 @@ class Buffer
      *
      * If not found, return everything
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
     public function readString(string $delim = "\x00"): string
@@ -198,11 +209,11 @@ class Buffer
      * @param int  $offset      Number of bits to cut off the end
      * @param bool $read_offset True if the data after the offset is to be read
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
     public function readPascalString(int $offset = 0, bool $read_offset = false): string
     {
-
         // Get the proper offset
         $len = $this->readInt8();
         $offset = max($len - $offset, 0);
@@ -220,30 +231,36 @@ class Buffer
      *
      * If not found, return everything
      *
+     * @param list<string> $delims
+     * @phpstan-impure
      * @throws ProtocolException
-     *
-     * @todo: Check to see if this is even used anymore
      */
     public function readStringMulti(array $delims, ?string &$delimfound = null): string
     {
+        $delimfound = null;
+        $delimiterPosition = null;
 
-        // Get position of delimiters
-        $pos = [];
         foreach ($delims as $delim) {
-            if ($index = strpos($this->data, $delim, min($this->index, $this->length))) {
-                $pos[] = $index;
+            if ($delim === '') {
+                continue;
+            }
+
+            $index = strpos($this->data, $delim, min($this->index, $this->length));
+
+            if ($index !== false && ($delimiterPosition === null || $index < $delimiterPosition)) {
+                $delimiterPosition = $index;
+                $delimfound = $delim;
             }
         }
 
         // If none are found then return whole buffer
-        if (empty($pos)) {
+        if ($delimiterPosition === null || $delimfound === null) {
             return $this->read(strlen($this->data) - $this->index);
         }
 
         // Read the string and remove the delimiter
-        sort($pos);
-        $string = $this->read($pos[0] - $this->index);
-        $delimfound = $this->read();
+        $string = $this->read($delimiterPosition - $this->index);
+        $this->read(strlen($delimfound));
 
         return $string;
     }
@@ -251,57 +268,51 @@ class Buffer
     /**
      * Read an 8-bit unsigned integer
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
     public function readInt8(): int
     {
-
-        $int = unpack('Cint', $this->read());
-
-        return $int['int'];
+        return $this->unpackInteger('Cvalue', $this->read());
     }
 
     /**
      * Read and 8-bit signed integer
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
     public function readInt8Signed(): int
     {
-
-        $int = unpack('cint', $this->read());
-
-        return $int['int'];
+        return $this->unpackInteger('cvalue', $this->read());
     }
 
     /**
      * Read a 16-bit unsigned integer
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
     public function readInt16(): int
     {
-
         // Change the integer type we are looking up
         $type = match ($this->number_type) {
-            self::NUMBER_TYPE_BIGENDIAN => 'nint',
-            self::NUMBER_TYPE_LITTLEENDIAN => 'vint',
-            default => 'Sint',
+            self::NUMBER_TYPE_BIGENDIAN => 'nvalue',
+            self::NUMBER_TYPE_LITTLEENDIAN => 'vvalue',
+            default => 'Svalue',
         };
 
-        $int = unpack($type, $this->read(2));
-
-        return $int['int'];
+        return $this->unpackInteger($type, $this->read(2));
     }
 
     /**
      * Read a 16-bit signed integer
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
     public function readInt16Signed(): int
     {
-
         // Read the data into a string
         $string = $this->read(2);
 
@@ -310,31 +321,35 @@ class Buffer
             $string = strrev($string);
         }
 
-        $int = unpack('sint', $string);
-
-        unset($string);
-
-        return $int['int'];
+        return $this->unpackInteger('svalue', $string);
     }
 
     /**
      * Read a 32-bit unsigned integer
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
-    public function readInt32($length = 4): int
+    public function readInt32(int $length = 4): int
     {
+        if ($length < 1 || $length > 4) {
+            throw new ProtocolException('The length of a 32-bit integer must be between 1 and 4 bytes.');
+        }
+
         // Change the integer type we are looking up
         $littleEndian = null;
+
         switch ($this->number_type) {
             case self::NUMBER_TYPE_BIGENDIAN:
                 $type = 'N';
                 $littleEndian = false;
+
                 break;
 
             case self::NUMBER_TYPE_LITTLEENDIAN:
                 $type = 'V';
                 $littleEndian = true;
+
                 break;
 
             default:
@@ -345,19 +360,20 @@ class Buffer
         $corrected = $this->read($length);
 
         // Unpack the number
-        $int = unpack($type . 'int', self::extendBinaryString($corrected, 4, $littleEndian));
-
-        return $int['int'];
+        return $this->unpackInteger(
+            $type . 'value',
+            self::extendBinaryString($corrected, $littleEndian),
+        );
     }
 
     /**
      * Read a 32-bit signed integer
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
     public function readInt32Signed(): int
     {
-
         // Read the data into a string
         $string = $this->read(4);
 
@@ -366,35 +382,27 @@ class Buffer
             $string = strrev($string);
         }
 
-        $int = unpack('lint', $string);
-
-        unset($string);
-
-        return $int['int'];
+        return $this->unpackInteger('lvalue', $string);
     }
 
     /**
      * Read a 64-bit unsigned integer
      *
+     * @phpstan-impure
      * @throws ProtocolException
      */
     public function readInt64(): int
     {
-
         // We have the pack 64-bit codes available. See: http://php.net/manual/en/function.pack.php
         if (PHP_INT_SIZE === 8 && version_compare(PHP_VERSION, '5.6.3') >= 0) {
             // Change the integer type we are looking up
             $type = match ($this->number_type) {
-                self::NUMBER_TYPE_BIGENDIAN => 'Jint',
-                self::NUMBER_TYPE_LITTLEENDIAN => 'Pint',
-                default => 'Qint',
+                self::NUMBER_TYPE_BIGENDIAN => 'Jvalue',
+                self::NUMBER_TYPE_LITTLEENDIAN => 'Pvalue',
+                default => 'Qvalue',
             };
 
-            $int64 = unpack($type, $this->read(8));
-
-            $int = $int64['int'];
-
-            unset($int64);
+            $int = $this->unpackInteger($type, $this->read(8));
         } else {
             if ($this->number_type === self::NUMBER_TYPE_BIGENDIAN) {
                 $high = $this->readInt32();
@@ -415,10 +423,12 @@ class Buffer
 
     /**
      * Read a 32-bit float
+     *
+     * @phpstan-impure
+     * @throws ProtocolException
      */
     public function readFloat32(): float
     {
-
         // Read the data into a string
         $string = $this->read(4);
 
@@ -427,20 +437,22 @@ class Buffer
             $string = strrev($string);
         }
 
-        $float = unpack('ffloat', $string);
+        $value = unpack('fvalue', $string);
 
-        unset($string);
+        if ($value === false || !isset($value['value']) || !is_float($value['value'])) {
+            throw new ProtocolException('Unable to unpack a 32-bit float from the buffer.');
+        }
 
-        return $float['float'];
+        return $value['value'];
     }
 
-    private static function extendBinaryString(string $input, int $length = 4, $littleEndian = null): string
+    private static function extendBinaryString(string $input, ?bool $littleEndian = null): string
     {
         if (is_null($littleEndian)) {
             $littleEndian = self::isLittleEndian();
         }
 
-        $extension = str_repeat(pack($littleEndian ? 'V' : 'N', 0b0000), $length - strlen($input));
+        $extension = str_repeat(pack($littleEndian ? 'V' : 'N', 0b0000), 4 - strlen($input));
 
         if ($littleEndian) {
             return $input . $extension;
@@ -451,6 +463,24 @@ class Buffer
 
     private static function isLittleEndian(): bool
     {
-        return 0x00FF === current(unpack('v', pack('S', 0x00FF)));
+        $value = unpack('vvalue', pack('S', 0x00FF));
+
+        return $value !== false && ($value['value'] ?? null) === 0x00FF;
+    }
+
+    /**
+     * Unpack a single integer value and turn malformed binary data into a protocol error.
+     *
+     * @throws ProtocolException
+     */
+    private function unpackInteger(string $format, string $data): int
+    {
+        $value = unpack($format, $data);
+
+        if ($value === false || !isset($value['value']) || !is_int($value['value'])) {
+            throw new ProtocolException('Unable to unpack an integer from the buffer.');
+        }
+
+        return $value['value'];
     }
 }

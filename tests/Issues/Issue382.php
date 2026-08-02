@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -36,15 +37,15 @@ class Issue382 extends TestBase
      * ErrorException (E_NOTICE)
      * Undefined offset: 32
      */
-    public function test1()
+    public function test1(): void
     {
         /**
          * Test Response Data provided by AAF - https://australianarmedforces.org/
          */
         $filePath = sprintf('%s/Providers/382.txt', __DIR__);
 
-        $testResult = $this->queryTest('58.162.184.102:2302', 'arma3', explode(PHP_EOL . '||' . PHP_EOL, file_get_contents($filePath)));
+        $testResult = $this->queryTest('58.162.184.102:2302', 'arma3', explode(PHP_EOL . '||' . PHP_EOL, self::fixtureContents($filePath)));
 
-        $this->assertEquals($testResult['gq_online'], true);
+        self::assertTrue($testResult['gq_online']);
     }
 }

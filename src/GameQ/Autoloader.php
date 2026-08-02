@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -19,7 +20,7 @@
  */
 
 /**
- * A simple PSR-4 spec auto loader to allow GameQ to function the same as if it were loaded via Composer
+ * A simple PSR-4 spec autoloader to allow GameQ to function the same as if it were loaded via Composer
  *
  * To use this just include this file in your script and the GameQ namespace will be made available
  *
@@ -27,8 +28,7 @@
  *
  * See: https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-4-autoloader-examples.md
  */
-spl_autoload_register(static function ($class) {
-
+spl_autoload_register(static function (string $class): void {
     // project-specific namespace prefix
     $prefix = 'GameQ\\';
 
@@ -46,13 +46,22 @@ spl_autoload_register(static function ($class) {
     // get the relative class name
     $relative_class = substr($class, $len);
 
+    if (
+        $relative_class === ''
+        || str_contains($relative_class, '..')
+        || str_contains($relative_class, '/')
+        || str_contains($relative_class, "\x00")
+    ) {
+        return;
+    }
+
     // replace the namespace prefix with the base directory, replace namespace
     // separators with directory separators in the relative class name, append
     // with .php
     $file = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
 
     // if the file exists, require it
-    if (file_exists($file)) {
+    if (is_file($file)) {
         require $file;
     }
 });

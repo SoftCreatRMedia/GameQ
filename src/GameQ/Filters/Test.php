@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -32,9 +33,10 @@ class Test extends Base
     /**
      * Apply the filter.  For this we just return whatever is sent
      *
-     * @return mixed
+     * @param array<string, mixed> $result
+     * @return array<string, mixed>
      */
-    public function apply(array $result, Server $server): mixed
+    public function apply(array $result, Server $server): array
     {
         return $result;
     }

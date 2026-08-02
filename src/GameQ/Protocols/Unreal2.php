@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,9 +19,9 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Buffer;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
-use GameQ\Buffer;
 use GameQ\Result;
 
 /**
@@ -30,6 +31,7 @@ use GameQ\Result;
  */
 class Unreal2 extends Protocol
 {
+    use GroupedResponseTrait;
 
     /**
      * Array of packets we want to look up.
@@ -91,47 +93,12 @@ class Unreal2 extends Protocol
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
-        // Will hold the packets after sorting
-        $packets = [];
-
-        // We need to pre-sort these for split packets so we can do extra work where needed
-        foreach ($this->packets_response as $response) {
-            $buffer = new Buffer($response);
-
-            // Pull out the header
-            $header = $buffer->read(5);
-
-            // Add the packet to the proper section, we will combine later
-            $packets[$header][] = $buffer->getBuffer();
-        }
-
-        unset($buffer);
-
-        $results = [];
-
-        // Now let's iterate and process
-        foreach ($packets as $header => $packetGroup) {
-            // Figure out which packet response this is
-            if (!array_key_exists($header, $this->responses)) {
-                throw new ProtocolException(__METHOD__ . " response type '" . bin2hex($header) . "' is not valid");
-            }
-
-            // Now we need to call the proper method
-            $results = array_merge(
-                $results,
-                call_user_func_array([$this, $this->responses[$header]], [new Buffer(implode($packetGroup))])
-            );
-        }
-
-        unset($packets);
-
-        return $results;
+        return $this->processGroupedResponses($this->packets_response, 5);
     }
 
     /*
@@ -140,14 +107,12 @@ class Unreal2 extends Protocol
 
     /**
      * Handles processing the details data into a usable format
-
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processDetails(Buffer $buffer)
+    protected function processDetails(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -168,12 +133,11 @@ class Unreal2 extends Protocol
     /**
      * Handles processing the player data into a usable format
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -200,17 +164,17 @@ class Unreal2 extends Protocol
     /**
      * Handles processing the rules data into a usable format
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processRules(Buffer $buffer)
+    protected function processRules(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
         // Named values
         $inc = -1;
+
         while ($buffer->getLength()) {
             // Grab the key
             $key = $buffer->readPascalString(1);

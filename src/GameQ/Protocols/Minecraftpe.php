@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,9 +26,8 @@ namespace GameQ\Protocols;
  *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
-class Minecraftpe extends Minecraft
+class Minecraftpe extends Minecraftbe
 {
-
     /**
      * String name of this protocol class
      */

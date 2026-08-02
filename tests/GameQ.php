@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,6 +19,11 @@
 
 namespace GameQ\Tests;
 
+use GameQ\Tests\Fixtures\BatchQuery;
+use GameQ\Tests\Fixtures\FollowUpQuery;
+use ReflectionClass;
+use RuntimeException;
+
 /**
  * GameQ tests class
  *
@@ -25,19 +31,18 @@ namespace GameQ\Tests;
  */
 class GameQ extends TestBase
 {
-
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\GameQ
+     * @var \GameQ\GameQ
      */
-    protected $stub;
+    protected \GameQ\GameQ $stub;
 
     /**
      * Setup to create our stub
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         $this->stub = new \GameQ\GameQ();
     }
@@ -45,38 +50,36 @@ class GameQ extends TestBase
     /**
      * Test factory
      */
-    public function testFactory()
+    public function testFactory(): void
     {
-
-        $this->assertInstanceOf('\GameQ\GameQ', \GameQ\GameQ::factory());
+        self::assertNotSame(\GameQ\GameQ::factory(), \GameQ\GameQ::factory());
     }
 
     /**
      * Test getters and setters
      */
-    public function testGetSetOptions()
+    public function testGetSetOptions(): void
     {
         // Test null return for missing option
-        $this->assertNull($this->stub->invalidoption);
+        self::assertNull($this->stub->__get('invalidoption'));
 
-        $this->stub->option1 = 'value1';
+        $this->stub->__set('option1', 'value1');
 
         // Verify the pull is correct
-        $this->assertEquals('value1', $this->stub->option1);
+        self::assertEquals('value1', $this->stub->__get('option1'));
 
         // Use set option chainable
         $this->stub->setOption('option1', 'value2');
 
         // Verify the pull is correct
-        $this->assertEquals('value2', $this->stub->option1);
+        self::assertEquals('value2', $this->stub->__get('option1'));
     }
 
     /**
      * Test adding/removing servers
      */
-    public function testAddServer()
+    public function testAddServer(): void
     {
-
         // Define some servers
         $servers = [
             [
@@ -96,17 +99,17 @@ class GameQ extends TestBase
         // Test single add server
         $this->stub->addServer($servers[0]);
 
-        $this->assertCount(1, $this->stub->getServers());
+        self::assertCount(1, $this->stub->getServers());
 
         // Clear the servers
         $this->stub->clearServers();
 
-        $this->assertCount(0, $this->stub->getServers());
+        self::assertCount(0, $this->stub->getServers());
 
         // Add multiple servers
         $this->stub->addServers($servers);
 
-        $this->assertCount(3, $this->stub->getServers());
+        self::assertCount(3, $this->stub->getServers());
 
         $this->stub->clearServers();
     }
@@ -114,15 +117,14 @@ class GameQ extends TestBase
     /**
      * Test adding servers from files
      *
-     * @depends testAddServer
      */
-    public function testAddServersFromFiles()
+    #[\PHPUnit\Framework\Attributes\Depends('testAddServer')]
+    public function testAddServersFromFiles(): void
     {
-
         // Test single file
         $this->stub->addServersFromFiles(__DIR__ . '/Protocols/Providers/server_list1.json');
 
-        $this->assertCount(2, $this->stub->getServers());
+        self::assertCount(2, $this->stub->getServers());
 
         $this->stub->clearServers();
 
@@ -131,7 +133,7 @@ class GameQ extends TestBase
             __DIR__ . '/Protocols/Providers/server_list1.json',
         ]);
 
-        $this->assertCount(2, $this->stub->getServers());
+        self::assertCount(2, $this->stub->getServers());
 
         $this->stub->clearServers();
 
@@ -141,7 +143,7 @@ class GameQ extends TestBase
         ]);
 
         // No servers should exist
-        $this->assertCount(0, $this->stub->getServers());
+        self::assertCount(0, $this->stub->getServers());
 
         $this->stub->clearServers();
 
@@ -149,7 +151,7 @@ class GameQ extends TestBase
         $this->stub->addServersFromFiles(__DIR__ . '/Protocols/Providers/server_listDoesnotexist.json');
 
         // No servers should exist
-        $this->assertCount(0, $this->stub->getServers());
+        self::assertCount(0, $this->stub->getServers());
 
         $this->stub->clearServers();
     }
@@ -157,48 +159,46 @@ class GameQ extends TestBase
     /**
      * Test adding/removing filters
      */
-    public function testFiltersAddRemove()
+    public function testFiltersAddRemove(): void
     {
-
         // Add filter
         $this->stub->addFilter('test_filter');
 
-        $this->assertArrayHasKey(
+        self::assertArrayHasKey(
             'test_filter_d751713988987e9331980363e24189ce',
-            $this->stub->listFilters()
+            $this->stub->listFilters(),
         );
 
         // Remove filter
         $this->stub->removeFilter('test_filter_d751713988987e9331980363e24189ce');
 
-        $this->assertArrayNotHasKey(
+        self::assertArrayNotHasKey(
             'test_filter_d751713988987e9331980363e24189ce',
-            $this->stub->listFilters()
+            $this->stub->listFilters(),
         );
 
         // Test for lower case always
         $this->stub->addFilter('tEst_fiLTEr');
 
-        $this->assertArrayHasKey(
+        self::assertArrayHasKey(
             'test_filter_d751713988987e9331980363e24189ce',
-            $this->stub->listFilters()
+            $this->stub->listFilters(),
         );
 
         // Remove filter always lower case
         $this->stub->removeFilter('tEst_fiLTEr_d751713988987e9331980363e24189ce');
 
-        $this->assertArrayNotHasKey(
+        self::assertArrayNotHasKey(
             'test_filter_d751713988987e9331980363e24189ce',
-            $this->stub->listFilters()
+            $this->stub->listFilters(),
         );
     }
 
     /**
      * Test filter application
      */
-    public function testFilterApply()
+    public function testFilterApply(): void
     {
-
         // Define some fake results
         $fakeResults = [
             'key1' => 'val1',
@@ -216,25 +216,21 @@ class GameQ extends TestBase
         $this->stub->addFilter('test');
 
         // Reflect on GameQ class so we can parse
-        $gameq = new \ReflectionClass($this->stub);
+        $gameq = new ReflectionClass($this->stub);
 
         // Get the parse method so we can call it
         $method = $gameq->getMethod('doApplyFilters');
 
-        // Set the method to accessible
-        $method->setAccessible(true);
-
         $testResult = $method->invoke($this->stub, $fakeResults, $server);
 
-        $this->assertEquals($fakeResults, $testResult);
+        self::assertEquals($fakeResults, $testResult);
     }
 
     /**
      * Test for bad filter and no exception is thrown
      */
-    public function testBadFilterException()
+    public function testBadFilterException(): void
     {
-
         // Define some fake results
         $fakeResults = [
             'key1' => 'val1',
@@ -252,17 +248,170 @@ class GameQ extends TestBase
         $this->stub->addFilter('some_bad_filter');
 
         // Reflect on GameQ class so we can parse
-        $gameq = new \ReflectionClass($this->stub);
+        $gameq = new ReflectionClass($this->stub);
 
         // Get the parse method so we can call it
         $method = $gameq->getMethod('doApplyFilters');
 
-        // Set the method to accessible
-        $method->setAccessible(true);
-
         // No changes should be made
         $testResult = $method->invoke($this->stub, $fakeResults, $server);
 
-        $this->assertEquals($fakeResults, $testResult);
+        self::assertEquals($fakeResults, $testResult);
+    }
+
+    public function testResponseDrivenFollowUpQueriesAreCollected(): void
+    {
+        $challengeToken = str_repeat("\xCC", 32);
+        FollowUpQuery::$roundResponses = [
+            ['ONEREPLY' . "\x00" . $challengeToken . str_repeat("\x00", 7)],
+            [
+                self::oneQueryPacket(0, 1, self::oneQueryTlv(1, self::oneQueryServerInfo())),
+                self::oneQueryPacket(1, 2, self::oneQueryTlv(
+                    2,
+                    self::oneQueryPlayerPage(2, 0, 'Alice', '11111111222233334444555555555555'),
+                )),
+            ],
+            [self::oneQueryPacket(0, 3, self::oneQueryTlv(
+                2,
+                self::oneQueryPlayerPage(2, 1, 'Bob', 'aaaaaaaabbbbccccddddeeeeeeeeeeee'),
+            ))],
+        ];
+        FollowUpQuery::clearWrites();
+
+        $reflection = new ReflectionClass($this->stub);
+        $reflection->getProperty('queryLibrary')->setValue($this->stub, FollowUpQuery::class);
+        $this->stub->addServer([
+            'id' => 'hytale-pagination',
+            'type' => 'hytaleone',
+            'host' => '127.0.0.1:5520',
+        ]);
+
+        $result = $this->stub->process()['hytale-pagination'];
+
+        self::assertCount(4, FollowUpQuery::$writes);
+        self::assertSame(2, $result['players_total']);
+        self::assertSame(2, $result['players_returned']);
+        self::assertFalse($result['players_truncated']);
+
+        $players = $result['players'] ?? null;
+        self::assertIsArray($players);
+        self::assertIsArray($players[0] ?? null);
+        self::assertIsArray($players[1] ?? null);
+        self::assertSame('Alice', $players[0]['name']);
+        self::assertSame('Bob', $players[1]['name']);
+    }
+
+    public function testSourceQueriesUseServerDrivenChallenges(): void
+    {
+        $infoResponse = "\xFF\xFF\xFF\xFF\x49\x11"
+            . "Counter-Strike 2 Server\x00de_dust2\x00csgo\x00Counter-Strike 2\x00"
+            . pack('vCCC', 730, 1, 64, 0)
+            . "dl"
+            . pack('CC', 0, 1)
+            . "1.41.1.2\x00";
+        FollowUpQuery::$roundResponses = [
+            ["\xFF\xFF\xFF\xFF\x41info"],
+            [$infoResponse],
+            ["\xFF\xFF\xFF\xFF\x41play"],
+            ["\xFF\xFF\xFF\xFF\x44\x00"],
+            ["\xFF\xFF\xFF\xFF\x41rule"],
+            ["\xFF\xFF\xFF\xFF\x45\x00\x00"],
+        ];
+        FollowUpQuery::clearWrites();
+
+        $reflection = new ReflectionClass($this->stub);
+        $reflection->getProperty('queryLibrary')->setValue($this->stub, FollowUpQuery::class);
+        $this->stub->addServer([
+            'id' => 'source-challenge',
+            'type' => 'cs2',
+            'host' => '127.0.0.1:27015',
+        ]);
+
+        $result = $this->stub->process()['source-challenge'];
+
+        self::assertSame([
+            "\xFF\xFF\xFF\xFFTSource Engine Query\x00",
+            "\xFF\xFF\xFF\xFFTSource Engine Query\x00info",
+            "\xFF\xFF\xFF\xFF\x55info",
+            "\xFF\xFF\xFF\xFF\x55play",
+            "\xFF\xFF\xFF\xFF\x56play",
+            "\xFF\xFF\xFF\xFF\x56rule",
+        ], FollowUpQuery::$writes);
+        self::assertTrue($result['gq_online']);
+        self::assertSame('Counter-Strike 2 Server', $result['gq_hostname']);
+        self::assertSame(730, $result['steamappid']);
+    }
+
+    public function testServersAreProcessedInConfiguredBatches(): void
+    {
+        BatchQuery::resetMetrics();
+
+        $reflection = new ReflectionClass($this->stub);
+        $reflection->getProperty('queryLibrary')->setValue($this->stub, BatchQuery::class);
+        $this->stub->setOption('max_servers_per_batch', 2);
+
+        for ($port = 27015; $port < 27020; ++$port) {
+            $this->stub->addServer([
+                'type' => 'source',
+                'host' => '127.0.0.1:' . $port,
+            ]);
+        }
+
+        $results = $this->stub->process();
+
+        self::assertCount(5, $results);
+        self::assertNotSame([], BatchQuery::$socketCounts);
+        self::assertLessThanOrEqual(2, max(BatchQuery::$socketCounts));
+        self::assertCount(5, $this->stub->getServers());
+    }
+
+    private static function oneQueryServerInfo(): string
+    {
+        return self::oneQueryString('Server')
+            . self::oneQueryString('MOTD')
+            . pack('V', 2)
+            . pack('V', 100)
+            . self::oneQueryString('2026.07.30')
+            . pack('V', 7)
+            . self::oneQueryString('DEADBEEF');
+    }
+
+    private static function oneQueryPlayerPage(
+        int $total,
+        int $offset,
+        string $name,
+        string $uuidHex,
+    ): string {
+        $uuid = hex2bin($uuidHex);
+
+        if ($uuid === false) {
+            throw new RuntimeException('Unable to encode the test UUID.');
+        }
+
+        return pack('V', $total)
+            . pack('V', 1)
+            . pack('V', $offset)
+            . self::oneQueryString($name)
+            . $uuid;
+    }
+
+    private static function oneQueryString(string $value): string
+    {
+        return pack('v', strlen($value)) . $value;
+    }
+
+    private static function oneQueryTlv(int $type, string $value): string
+    {
+        return pack('v', $type) . pack('v', strlen($value)) . $value;
+    }
+
+    private static function oneQueryPacket(int $flags, int $requestId, string $payload): string
+    {
+        return 'ONEREPLY'
+            . "\x01"
+            . pack('v', $flags)
+            . pack('V', $requestId)
+            . pack('v', strlen($payload))
+            . $payload;
     }
 }

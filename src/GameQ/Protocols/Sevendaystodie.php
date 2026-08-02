@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -35,9 +36,4 @@ class Sevendaystodie extends Source
      * Longer string name of this protocol class
      */
     protected string $name_long = "7 Days to Die";
-
-    /**
-     * query_port = client_port + 0
-     */
-    protected int $port_diff = 0;
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -26,24 +27,55 @@ namespace GameQ\Tests\Protocols;
 class Squad extends Base
 {
     /**
-     * Test responses for Squad
-     *
-     * @dataProvider loadData
-     *
-     * @param $responses
-     * @param $result
+     * Test a Squad EOS matchmaking response
      */
-    public function testResponses($responses, $result)
+    public function testResponse(): void
     {
-        // Pull the first key off the array this is the server ip:port
-        $server = key($result);
-
         $testResult = $this->queryTest(
-            $server,
+            '127.0.0.1:7787',
             'squad',
-            $responses
+            [
+                '{"access_token":"device-token"}',
+                '{"access_token":"access-token"}',
+                json_encode([
+                    'sessions' => [
+                        [
+                            'attributes' => [
+                                'ADDRESS_s' => '127.0.0.1',
+                                'ADDRESSBOUND_s' => '0.0.0.0:7787',
+                                'SERVERNAME_s' => 'Squad Test Server',
+                                'MAPNAME_s' => 'Al Basrah',
+                                'PASSWORD_b' => false,
+                                'GAMEVERSION_s' => '8.2.1',
+                            ],
+                            'settings' => [
+                                'maxPublicPlayers' => 100,
+                            ],
+                            'totalPlayers' => 42,
+                        ],
+                    ],
+                ], JSON_THROW_ON_ERROR),
+            ],
+            false,
+            ['skip_http_requests' => true],
         );
 
-        $this->assertEqualsDelta($result[$server], $testResult, 0.000000001);
+        self::assertSame([
+            'hostname' => 'Squad Test Server',
+            'mapname' => 'Al Basrah',
+            'password' => false,
+            'version' => '8.2.1',
+            'numplayers' => 42,
+            'maxplayers' => 100,
+            'gq_online' => true,
+            'gq_address' => '127.0.0.1',
+            'gq_port_client' => 7787,
+            'gq_port_query' => 7787,
+            'gq_protocol' => 'squad',
+            'gq_type' => 'squad',
+            'gq_name' => 'Squad',
+            'gq_transport' => 'tcp',
+            'gq_joinlink' => '',
+        ], $testResult);
     }
 }

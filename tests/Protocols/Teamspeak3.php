@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -30,16 +31,16 @@ class Teamspeak3 extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Teamspeak3
+     * @var \GameQ\Protocols\Teamspeak3
      */
-    protected $stub;
+    protected \GameQ\Protocols\Teamspeak3 $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_DETAILS  => "use port=%d\x0Aserverinfo\x0A",
         \GameQ\Protocol::PACKET_PLAYERS  => "use port=%d\x0Aclientlist\x0A",
         \GameQ\Protocol::PACKET_CHANNELS => "use port=%d\x0Achannellist -topic\x0A",
@@ -48,9 +49,9 @@ class Teamspeak3 extends Base
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Teamspeak3();
@@ -59,26 +60,26 @@ class Teamspeak3 extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test for exception being thrown if missing query_port
      */
-    public function testMissingQueryPort()
+    public function testMissingQueryPort(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Teamspeak3::beforeSend Missing required setting 'query_port'.");
+        $this->expectExceptionMessageContains("GameQ\Protocols\Teamspeak3::beforeSend Missing required setting 'query_port'.");
 
         $client_port = 9987;
         $query_port = 10011;
 
         // Create a mock server
         $server = new \GameQ\Server([
-            \GameQ\Server::SERVER_HOST    => "127.0.0.1:{$client_port}",
+            \GameQ\Server::SERVER_HOST    => "127.0.0.1:$client_port",
             \GameQ\Server::SERVER_TYPE    => 'teamspeak3',
             \GameQ\Server::SERVER_OPTIONS => [
                 \GameQ\Server::SERVER_OPTIONS_QUERY_PORT => $query_port,
@@ -92,23 +93,23 @@ class Teamspeak3 extends Base
     /**
      * Test the packets to see if they set
      *
-     * @depends testMissingQueryPort
      */
-    public function testBeforeSend()
+    #[\PHPUnit\Framework\Attributes\Depends('testMissingQueryPort')]
+    public function testBeforeSend(): void
     {
         $client_port = 9987;
         $query_port = 10011;
 
         // Set what the packets should look like
         $packets = [
-            \GameQ\Protocol::PACKET_DETAILS  => "use port={$client_port}\x0Aserverinfo\x0A",
-            \GameQ\Protocol::PACKET_PLAYERS  => "use port={$client_port}\x0Aclientlist\x0A",
-            \GameQ\Protocol::PACKET_CHANNELS => "use port={$client_port}\x0Achannellist -topic\x0A",
+            \GameQ\Protocol::PACKET_DETAILS  => "use port=$client_port\x0Aserverinfo\x0A",
+            \GameQ\Protocol::PACKET_PLAYERS  => "use port=$client_port\x0Aclientlist\x0A",
+            \GameQ\Protocol::PACKET_CHANNELS => "use port=$client_port\x0Achannellist -topic\x0A",
         ];
 
         // Create a mock server
         $server = new \GameQ\Server([
-            \GameQ\Server::SERVER_HOST    => "127.0.0.1:{$client_port}",
+            \GameQ\Server::SERVER_HOST    => "127.0.0.1:$client_port",
             \GameQ\Server::SERVER_TYPE    => 'teamspeak3',
             \GameQ\Server::SERVER_OPTIONS => [
                 \GameQ\Server::SERVER_OPTIONS_QUERY_PORT => $query_port,
@@ -122,22 +123,24 @@ class Teamspeak3 extends Base
         // Apply the before send
         $stub->beforeSend($server);
 
-        $this->assertEquals($packets, $stub->getPacket());
+        self::assertEquals($packets, $stub->getPacket());
     }
 
     /**
      * Test for invalid header
      */
-    public function testInvalidHeader()
+    public function testInvalidHeader(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Teamspeak3::processResponse Expected header 'So2' does not match expected 'TS3'.");
+        $this->expectExceptionMessageContains(
+            "GameQ\Protocols\Teamspeak3::processResponse Expected header 'So2' does not match expected 'TS3'.",
+        );
 
         $client_port = 9987;
         $query_port = 10011;
 
         // Read in a css source file
-        $source = file_get_contents(sprintf('%s/Providers/Teamspeak3/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Teamspeak3/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("TS3", "So2", $source);
@@ -146,26 +149,26 @@ class Teamspeak3 extends Base
         $this->queryTest(
             '127.0.0.1:' . $client_port,
             'teamspeak3',
-            explode(PHP_EOL . '||' . PHP_EOL, $source, true),
+            explode(PHP_EOL . '||' . PHP_EOL, $source),
             true,
             [
                 \GameQ\Server::SERVER_OPTIONS_QUERY_PORT => $query_port,
-            ]
+            ],
         );
     }
 
     /**
      * Test responses for Teamspeak3
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
@@ -174,9 +177,9 @@ class Teamspeak3 extends Base
             false,
             [
                 \GameQ\Server::SERVER_OPTIONS_QUERY_PORT => $result[$server]['gq_port_query'],
-            ]
+            ],
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

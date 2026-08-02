@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -27,18 +28,24 @@ use GameQ\Server;
  */
 abstract class Base
 {
-
     /**
      * Holds the options for this instance of the filter
+     *
+     * @var array<string, mixed>
      */
     protected array $options = [];
 
+    /**
+     * @param array<string, mixed> $options
+     */
     public function __construct(array $options = [])
     {
-
         $this->options = $options;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getOptions(): array
     {
         return $this->options;
@@ -46,6 +53,9 @@ abstract class Base
 
     /**
      * Apply the filter to the data
+     *
+     * @param array<string, mixed> $result
+     * @return array<string, mixed>
      */
-    abstract public function apply(array $result, Server $server): mixed;
+    abstract public function apply(array $result, Server $server): array;
 }

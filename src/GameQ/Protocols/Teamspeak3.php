@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,11 +19,10 @@
 
 namespace GameQ\Protocols;
 
-use GameQ\Protocol;
 use GameQ\Buffer;
-use GameQ\Result;
-use GameQ\Server;
 use GameQ\Exception\ProtocolException;
+use GameQ\Protocol;
+use GameQ\Result;
 
 /**
  * Teamspeak 3 Protocol Class
@@ -36,6 +36,7 @@ use GameQ\Exception\ProtocolException;
  */
 class Teamspeak3 extends Protocol
 {
+    use TeamspeakQueryPortTrait;
 
     /**
      * Array of packets we want to look up.
@@ -98,36 +99,13 @@ class Teamspeak3 extends Protocol
     ];
 
     /**
-     * Before we send off the queries we need to update the packets
-     *
-     * @throws ProtocolException
-     */
-    public function beforeSend(Server $server): void
-    {
-
-        // Check to make sure we have a query_port because it is required
-        if (!isset($this->options[Server::SERVER_OPTIONS_QUERY_PORT])
-            || empty($this->options[Server::SERVER_OPTIONS_QUERY_PORT])
-        ) {
-            throw new ProtocolException(__METHOD__ . " Missing required setting '" . Server::SERVER_OPTIONS_QUERY_PORT . "'.");
-        }
-
-        // Let's loop the packets and set the proper pieces
-        foreach ($this->packets as $packet_type => $packet) {
-            // Update with the client port for the server
-            $this->packets[$packet_type] = sprintf($packet, $server->portClient());
-        }
-    }
-
-    /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
         // Make a new buffer out of all of the packets
         $buffer = new Buffer(implode('', $this->packets_response));
 
@@ -146,17 +124,14 @@ class Teamspeak3 extends Protocol
                 '\\',
                 '/',
             ],
-            $buffer->getBuffer()
+            $buffer->getBuffer(),
         );
 
         // Explode the sections and filter to remove empty, junk ones
-        $sections = array_filter(explode("\n", $raw), static function ($value) {
-
-            $value = trim($value);
-
-            // Not empty string or a message response for "error id=\d"
-            return !empty($value) && !str_starts_with($value, 'error');
-        });
+        $sections = array_filter(
+            explode("\n", $raw),
+            static fn(string $value): bool => trim($value) !== '' && !str_starts_with($value, 'error'),
+        );
 
         // Trim up the values to remove extra whitespace
         $sections = array_map('trim', $sections);
@@ -196,13 +171,11 @@ class Teamspeak3 extends Protocol
      *
      * Takes data in "key1=value1 key2=value2 ..." and processes it into a usable format
      *
-     * @param $data
-     *
-     * @return array
+     * @param string $data
+     * @return array<string, string>
      */
-    protected function processProperties($data)
+    protected function processProperties(string $data): array
     {
-
         // Will hold the properties we are sending back
         $properties = [];
 
@@ -222,7 +195,7 @@ class Teamspeak3 extends Protocol
                 [
                     ' ',
                 ],
-                $value
+                $value,
             ));
         }
 
@@ -231,8 +204,12 @@ class Teamspeak3 extends Protocol
 
     /**
      * Handles processing the details data into a usable format
+     *
+     * @param string $data
+     * @param Result $result
+     * @return void
      */
-    protected function processDetails(string $data, Result $result)
+    protected function processDetails(string $data, Result $result): void
     {
         // Offload the parsing for these values
         $properties = $this->processProperties($data);
@@ -246,18 +223,21 @@ class Teamspeak3 extends Protocol
         }
 
         // We need to manually figure out the number of players
-        $result->add(
-            'numplayers',
-            ($properties['virtualserver_clientsonline'] - $properties['virtualserver_queryclientsonline'])
-        );
+        $clientsOnline = $properties['virtualserver_clientsonline'] ?? '0';
+        $queryClientsOnline = $properties['virtualserver_queryclientsonline'] ?? '0';
+        $result->add('numplayers', (int) $clientsOnline - (int) $queryClientsOnline);
 
         unset($properties, $key, $value);
     }
 
     /**
      * Process the channel listing
+     *
+     * @param string $data
+     * @param Result $result
+     * @return void
      */
-    protected function processChannels(string $data, Result $result)
+    protected function processChannels(string $data, Result $result): void
     {
         // We need to split the data at the pipe
         $channels = explode('|', $data);
@@ -278,8 +258,12 @@ class Teamspeak3 extends Protocol
 
     /**
      * Process the user listing
+     *
+     * @param string $data
+     * @param Result $result
+     * @return void
      */
-    protected function processPlayers(string $data, Result $result)
+    protected function processPlayers(string $data, Result $result): void
     {
         // We need to split the data at the pipe
         $players = explode('|', $data);

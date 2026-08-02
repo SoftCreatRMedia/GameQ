@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -25,16 +26,16 @@ class Lhmp extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Lhmp
+     * @var \GameQ\Protocols\Lhmp
      */
-    protected $stub;
+    protected \GameQ\Protocols\Lhmp $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_DETAILS => "LHMPo",
         \GameQ\Protocol::PACKET_PLAYERS => "LHMPp",
     ];
@@ -42,9 +43,9 @@ class Lhmp extends Base
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Lhmp();
@@ -53,39 +54,39 @@ class Lhmp extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test invalid packet type without debug
      */
-    public function testInvalidPacketType()
+    public function testInvalidPacketType(): void
     {
         // Read in a lhmp source file
-        $source = file_get_contents(sprintf('%s/Providers/Lhmp/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Lhmp/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("LHMPo", "LHMPz", $source);
 
         // Should show up as offline
-        $testResult = $this->queryTest('127.0.0.1:270015', 'lhmp', explode(PHP_EOL . '||' . PHP_EOL, $source), false);
+        $testResult = $this->queryTest('127.0.0.1:27015', 'lhmp', explode(PHP_EOL . '||' . PHP_EOL, $source), false);
 
-        $this->assertFalse($testResult['gq_online']);
+        self::assertFalse($testResult['gq_online']);
     }
 
     /**
      * Test for invalid packet type in response
      */
-    public function testInvalidPacketTypeDebug()
+    public function testInvalidPacketTypeDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage("GameQ\Protocols\Lhmp::processResponse response type 'LHMPz' is not valid");
+        $this->expectExceptionMessageContains("GameQ\Protocols\Lhmp::processResponse response type 'LHMPz' is not valid");
 
         // Read in a lhmp source file
-        $source = file_get_contents(sprintf('%s/Providers/Lhmp/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Lhmp/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("LHMPo", "LHMPz", $source);

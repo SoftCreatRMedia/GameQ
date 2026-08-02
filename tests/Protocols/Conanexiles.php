@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -28,15 +29,15 @@ class Conanexiles extends Base
     /**
      * Test responses for Dods
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
@@ -45,9 +46,9 @@ class Conanexiles extends Base
             false,
             [
                 \GameQ\Server::SERVER_OPTIONS_QUERY_PORT => $result[ $server ]['gq_port_query'],
-            ]
+            ],
         );
 
-        $this->assertEqualsDelta($result[$server], $testResult, 0.00000001);
+        self::assertEqualsDelta($result[$server], $testResult, 0.00000001);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,10 +19,10 @@
 
 namespace GameQ\Protocols;
 
-use GameQ\Protocol;
 use GameQ\Buffer;
-use GameQ\Result;
 use GameQ\Exception\ProtocolException;
+use GameQ\Protocol;
+use GameQ\Result;
 
 /**
  * StarMade Protocol Class
@@ -34,7 +35,6 @@ use GameQ\Exception\ProtocolException;
  */
 class Starmade extends Protocol
 {
-
     /**
      * Array of packets we want to query.
      */
@@ -85,12 +85,11 @@ class Starmade extends Protocol
     /**
      * Process the response for the StarMade server
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
         // Implode the packets, not sure if there is any split logic for multiple packets
         $buffer = new Buffer(implode('', $this->packets_response), Buffer::NUMBER_TYPE_BIGENDIAN);
 
@@ -114,6 +113,10 @@ class Starmade extends Protocol
 
         $parsed = $this->parseServerParameters($buffer);
 
+        if (count($parsed) < 7) {
+            throw new ProtocolException('The StarMade response does not contain all required parameters.');
+        }
+
         // Set the result to a new result instance
         $result = new Result();
 
@@ -136,18 +139,21 @@ class Starmade extends Protocol
 
     /**
      * Parse the server response parameters
- *
-     * @return array
+     *
+     * @return list<bool|float|int|string|list<int>>
      * @throws ProtocolException
      */
-    protected function parseServerParameters(Buffer $buffer)
+    protected function parseServerParameters(Buffer $buffer): array
     {
-
         // Init the parsed data array
         $parsed = [];
 
         // Read the number of parameters to parse
         $parameterSize = $buffer->readInt32Signed();
+
+        if ($parameterSize < 0) {
+            throw new ProtocolException('StarMade response has an invalid parameter count.');
+        }
 
         // Iterate over the parameter size
         for ($i = 0; $i < $parameterSize; $i++) {
@@ -157,49 +163,73 @@ class Starmade extends Protocol
             switch ($dataType) {
                 // 32-bit int
                 case 1:
-                    $parsed[$i] = $buffer->readInt32Signed();
+                    $parsed[] = $buffer->readInt32Signed();
+
                     break;
 
-                // 64-bit int
+                    // 64-bit int
                 case 2:
-                    $parsed[$i] = $buffer->readInt64();
+                    $parsed[] = $buffer->readInt64();
+
                     break;
 
-                // Float
+                    // Float
                 case 3:
-                    $parsed[$i] = $buffer->readFloat32();
+                    $parsed[] = $buffer->readFloat32();
+
                     break;
 
-                // String
+                    // String
                 case 4:
                     // The first 2 bytes are the string length
                     $strLength = $buffer->readInt16Signed();
 
                     // Read the above length from the buffer
-                    $parsed[$i] = $buffer->read($strLength);
+                    $parsed[] = $buffer->read($strLength);
 
                     unset($strLength);
+
                     break;
 
-                // Boolean
+                    // Boolean
                 case 5:
-                    $parsed[$i] = (bool)$buffer->readInt8Signed();
+                    $parsed[] = (bool) $buffer->readInt8Signed();
+
                     break;
 
-                // 8-bit int
+                    // 8-bit int
                 case 6:
-                    $parsed[$i] = $buffer->readInt8Signed();
+                    $parsed[] = $buffer->readInt8Signed();
+
                     break;
 
-                // 16-bit int
+                    // 16-bit int
                 case 7:
-                    $parsed[$i] = $buffer->readInt16Signed();
+                    $parsed[] = $buffer->readInt16Signed();
+
                     break;
 
-                // Array
+                    // Byte array
                 case 8:
-                    // Not implemented
-                    throw new ProtocolException("StarMade array parsing is not implemented!");
+                    $arrayLength = $buffer->readInt32Signed();
+
+                    if ($arrayLength < 0) {
+                        throw new ProtocolException('StarMade response has an invalid byte-array length.');
+                    }
+
+                    $arrayData = $buffer->read($arrayLength);
+                    $values = [];
+
+                    for ($index = 0; $index < $arrayLength; ++$index) {
+                        $values[] = ord($arrayData[$index]);
+                    }
+
+                    $parsed[] = $values;
+
+                    break;
+
+                default:
+                    throw new ProtocolException("Unknown StarMade parameter type '$dataType'.");
             }
         }
 

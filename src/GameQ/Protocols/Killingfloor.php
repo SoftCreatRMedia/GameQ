@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -30,7 +31,6 @@ use GameQ\Result;
  */
 class Killingfloor extends Unreal2
 {
-
     /**
      * String name of this protocol class
      */
@@ -54,12 +54,11 @@ class Killingfloor extends Unreal2
     /**
      * Overload the default detail process since this version is different
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processDetails(Buffer $buffer)
+    protected function processDetails(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 

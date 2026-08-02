@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,9 +19,9 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Buffer;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
-use GameQ\Buffer;
 use GameQ\Result;
 
 /**
@@ -93,10 +94,10 @@ class Doom3 extends Protocol
     /**
      * Handle response from the server
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Make a buffer
         $buffer = new Buffer(implode('', $this->packets_response));
@@ -106,37 +107,37 @@ class Doom3 extends Protocol
 
         // Header
         // Figure out which packet response this is
-        if (empty($header) || !array_key_exists($header, $this->responses)) {
+        if ($header === '' || !array_key_exists($header, $this->responses)) {
             throw new ProtocolException(__METHOD__ . " response type '" . bin2hex($header) . "' is not valid");
         }
 
-        return $this->{$this->responses[$header]}($buffer);
+        return $this->processResponseMethod($this->responses[$header], $buffer);
     }
 
     /**
      * Process the status response
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processStatus(Buffer $buffer)
+    protected function processStatus(Buffer $buffer): array
     {
         // We need to split the data and offload
         $results = $this->processServerInfo($buffer);
 
-        return array_merge_recursive(
+        return array_merge(
             $results,
-            $this->processPlayers($buffer)
+            $this->processPlayers($buffer),
         );
     }
 
     /**
      * Handle processing the server information
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processServerInfo(Buffer $buffer)
+    protected function processServerInfo(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
@@ -149,7 +150,7 @@ class Doom3 extends Protocol
             $val = $this->convertToUtf8(trim($buffer->readString()));
 
             // Something is empty so we are done
-            if (empty($key) && empty($val)) {
+            if ($key === '' && $val === '') {
                 break;
             }
 
@@ -162,10 +163,10 @@ class Doom3 extends Protocol
     /**
      * Handle processing of player data
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
         // Some games do not have a number of current players
         $playerCount = 0;

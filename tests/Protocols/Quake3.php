@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -22,29 +23,28 @@ use GameQ\Exception\ProtocolException;
 
 class Quake3 extends Base
 {
-
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Quake3
+     * @var \GameQ\Protocols\Quake3
      */
-    protected $stub;
+    protected \GameQ\Protocols\Quake3 $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_STATUS => "\xFF\xFF\xFF\xFF\x67\x65\x74\x73\x74\x61\x74\x75\x73\x0A",
     ];
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Quake3();
@@ -53,19 +53,19 @@ class Quake3 extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test invalid packet type without debug
      */
-    public function testInvalidPacketType()
+    public function testInvalidPacketType(): void
     {
         // Read in a Quake 3 source file
-        $source = file_get_contents(sprintf('%s/Providers/Quake3/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Quake3/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("\xFF\xFF\xFF\xFFstatusResponse", "\xFF\xFF\xFF\xFFstatusResponses", $source);
@@ -73,20 +73,20 @@ class Quake3 extends Base
         // Should show up as offline
         $testResult = $this->queryTest('127.0.0.1:27960', 'quake3', explode(PHP_EOL . '||' . PHP_EOL, $source), false);
 
-        $this->assertFalse($testResult['gq_online']);
+        self::assertFalse($testResult['gq_online']);
     }
 
     /**
      * Test for invalid packet type in response
      */
-    public function testInvalidPacketTypeDebug()
+    public function testInvalidPacketTypeDebug(): void
     {
         $this->expectException(ProtocolException::class);
-        $this->expectExceptionMessage(
-            "GameQ\Protocols\Quake3::processResponse response type 'ffffffff737461747573526573706f6e736573' is not valid"
+        $this->expectExceptionMessageContains(
+            "GameQ\Protocols\Quake3::processResponse response type 'ffffffff737461747573526573706f6e736573' is not valid",
         );
         // Read in a Quake 3 source file
-        $source = file_get_contents(sprintf('%s/Providers/Quake3/1_response.txt', __DIR__));
+        $source = self::fixtureContents(sprintf('%s/Providers/Quake3/1_response.txt', __DIR__));
 
         // Change the first packet to some unknown header
         $source = str_replace("\xFF\xFF\xFF\xFFstatusResponse", "\xFF\xFF\xFF\xFFstatusResponses", $source);
@@ -98,22 +98,22 @@ class Quake3 extends Base
     /**
      * Test responses for Quake3
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'quake3',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

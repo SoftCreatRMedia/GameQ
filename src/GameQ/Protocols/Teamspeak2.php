@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,11 +19,10 @@
 
 namespace GameQ\Protocols;
 
-use GameQ\Protocol;
 use GameQ\Buffer;
-use GameQ\Result;
-use GameQ\Server;
 use GameQ\Exception\ProtocolException;
+use GameQ\Protocol;
+use GameQ\Result;
 
 /**
  * Teamspeak 2 Protocol Class
@@ -36,6 +36,7 @@ use GameQ\Exception\ProtocolException;
  */
 class Teamspeak2 extends Protocol
 {
+    use TeamspeakQueryPortTrait;
 
     /**
      * Array of packets we want to look up.
@@ -98,36 +99,13 @@ class Teamspeak2 extends Protocol
     ];
 
     /**
-     * Before we send off the queries we need to update the packets
-     *
-     * @throws ProtocolException
-     */
-    public function beforeSend(Server $server): void
-    {
-
-        // Check to make sure we have a query_port because it is required
-        if (!isset($this->options[Server::SERVER_OPTIONS_QUERY_PORT])
-            || empty($this->options[Server::SERVER_OPTIONS_QUERY_PORT])
-        ) {
-            throw new ProtocolException(__METHOD__ . " Missing required setting '" . Server::SERVER_OPTIONS_QUERY_PORT . "'.");
-        }
-
-        // Let's loop the packets and set the proper pieces
-        foreach ($this->packets as $packet_type => $packet) {
-            // Update with the client port for the server
-            $this->packets[$packet_type] = sprintf($packet, $server->portClient());
-        }
-    }
-
-    /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
         // Make a new buffer out of all of the packets
         $buffer = new Buffer(implode('', $this->packets_response));
 
@@ -137,12 +115,10 @@ class Teamspeak2 extends Protocol
         }
 
         // Split this buffer as the data blocks are bound by "OK" and drop any empty values
-        $sections = array_filter(explode("OK", $buffer->getBuffer()), static function ($value) {
-
-            $value = trim($value);
-
-            return !empty($value);
-        });
+        $sections = array_filter(
+            explode("OK", $buffer->getBuffer()),
+            static fn(string $value): bool => trim($value) !== '',
+        );
 
         // Trim up the values to remove extra whitespace
         $sections = array_map('trim', $sections);
@@ -181,9 +157,12 @@ class Teamspeak2 extends Protocol
     /**
      * Handles processing the details data into a usable format
      *
+     * @param string $data
+     * @param Result $result
+     * @return void
      * @throws ProtocolException
      */
-    protected function processDetails(string $data, Result $result)
+    protected function processDetails(string $data, Result $result): void
     {
         // Create a buffer
         $buffer = new Buffer($data);
@@ -197,7 +176,7 @@ class Teamspeak2 extends Protocol
             $row = trim($buffer->readString("\n"));
 
             // Split out the information
-            list($key, $value) = explode('=', $row, 2);
+            [$key, $value] = explode('=', $row, 2);
 
             // Add this to the result
             $result->add($key, $this->convertToUtf8($value));
@@ -209,9 +188,12 @@ class Teamspeak2 extends Protocol
     /**
      * Process the channel listing
      *
+     * @param string $data
+     * @param Result $result
+     * @return void
      * @throws ProtocolException
      */
-    protected function processChannels(string $data, Result $result)
+    protected function processChannels(string $data, Result $result): void
     {
         // Create a buffer
         $buffer = new Buffer($data);
@@ -225,7 +207,12 @@ class Teamspeak2 extends Protocol
             $row = trim($buffer->readString("\n"));
 
             // Explode and merge the data with the columns, then parse
-            $data = array_combine($columns, explode("\t", $row, 9));
+            $values = explode("\t", $row, 9);
+
+            if (count($columns) !== count($values)) {
+                throw new ProtocolException('The TeamSpeak 2 channel response has invalid columns.');
+            }
+            $data = array_combine($columns, $values);
 
             foreach ($data as $key => $value) {
                 // Now add the data to the result
@@ -239,9 +226,12 @@ class Teamspeak2 extends Protocol
     /**
      * Process the user listing
      *
+     * @param string $data
+     * @param Result $result
+     * @return void
      * @throws ProtocolException
      */
-    protected function processPlayers(string $data, Result $result)
+    protected function processPlayers(string $data, Result $result): void
     {
         // Create a buffer
         $buffer = new Buffer($data);
@@ -255,7 +245,12 @@ class Teamspeak2 extends Protocol
             $row = trim($buffer->readString("\n"));
 
             // Explode and merge the data with the columns, then parse
-            $data = array_combine($columns, explode("\t", $row, 16));
+            $values = explode("\t", $row, 16);
+
+            if (count($columns) !== count($values)) {
+                throw new ProtocolException('The TeamSpeak 2 player response has invalid columns.');
+            }
+            $data = array_combine($columns, $values);
 
             foreach ($data as $key => $value) {
                 // Now add the data to the result

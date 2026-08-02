@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,6 +19,8 @@
 
 namespace GameQ\Tests;
 
+use ReflectionClass;
+
 /**
  * Protocol test class
  *
@@ -25,108 +28,105 @@ namespace GameQ\Tests;
  */
 class Protocol extends TestBase
 {
-
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocol
+     * @var \GameQ\Protocol
      */
-    protected $stub;
+    protected \GameQ\Protocol $stub;
 
     /**
      * Some dummy options
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $options = [
+    protected array $options = [
         'key1' => 'var1',
     ];
 
     /**
      * Setup to create our stub
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
-
-        $this->stub = $this->getMockForAbstractClass('\GameQ\Protocol', [ $this->options ]);
+        $this->stub = new class ($this->options) extends \GameQ\Protocol {
+            public function processResponse(): array
+            {
+                return [];
+            }
+        };
     }
 
     /**
      * Random assortment of general tests for completeness
      */
-    public function testGeneral()
+    public function testGeneral(): void
     {
-
         $name = 'Test name';
         $nameLong = 'Test name bigger, longer';
         $portDiff = 5454;
 
-        $reflection = new \ReflectionClass($this->stub);
+        $reflection = new ReflectionClass($this->stub);
         $reflection_property_name = $reflection->getProperty('name');
-        $reflection_property_name->setAccessible(true);
 
         $reflection_property_name->setValue($this->stub, $name);
 
-        $this->assertEquals($name, $this->stub->name());
+        self::assertEquals($name, $this->stub->name());
 
         $reflection_property_namelong = $reflection->getProperty('name_long');
-        $reflection_property_namelong->setAccessible(true);
 
         $reflection_property_namelong->setValue($this->stub, $nameLong);
 
-        $this->assertEquals($nameLong, $this->stub->nameLong());
+        self::assertEquals($nameLong, $this->stub->nameLong());
 
         // Test transport
-        $this->assertEquals(\GameQ\Protocol::TRANSPORT_UDP, $this->stub->transport());
+        self::assertEquals(\GameQ\Protocol::TRANSPORT_UDP, $this->stub->transport());
 
         // Test transport setting
         $this->stub->transport(\GameQ\Protocol::TRANSPORT_TCP);
-        $this->assertEquals(\GameQ\Protocol::TRANSPORT_TCP, $this->stub->transport());
+        self::assertEquals(\GameQ\Protocol::TRANSPORT_TCP, $this->stub->transport());
 
         // Test protocol state
-        $this->assertEquals(\GameQ\Protocol::STATE_STABLE, $this->stub->state());
+        self::assertEquals(\GameQ\Protocol::STATE_STABLE, $this->stub->state());
 
         // Test port diff
         $reflection_property_portdiff = $reflection->getProperty('port_diff');
-        $reflection_property_portdiff->setAccessible(true);
 
         $reflection_property_portdiff->setValue($this->stub, $portDiff);
 
-        $this->assertEquals($portDiff, $this->stub->portDiff());
+        self::assertEquals($portDiff, $this->stub->portDiff());
     }
 
     /**
      * Test packet setter/getter and some other packet methods
      */
-    public function testPackets()
+    public function testPackets(): void
     {
-
         $packets = [
             \GameQ\Protocol::PACKET_CHALLENGE => 'Do you even lift?',
             \GameQ\Protocol::PACKET_RULES     => 'There are no rules!!',
         ];
 
-        $reflection = new \ReflectionClass($this->stub);
+        $reflection = new ReflectionClass($this->stub);
         $reflection_property = $reflection->getProperty('packets');
-        $reflection_property->setAccessible(true);
 
         $reflection_property->setValue($this->stub, $packets);
 
         // Test all return
-        $this->assertEquals($packets, $this->stub->getPacket());
+        self::assertEquals($packets, $this->stub->getPacket());
 
         // Test multiple selected
-        $this->assertEquals($packets, $this->stub->getPacket([
+        self::assertEquals($packets, $this->stub->getPacket([
             \GameQ\Protocol::PACKET_CHALLENGE,
             \GameQ\Protocol::PACKET_RULES,
         ]));
 
         // Test single selected
-        $this->assertEquals(
+        self::assertEquals(
             $packets[\GameQ\Protocol::PACKET_CHALLENGE],
-            $this->stub->getPacket(\GameQ\Protocol::PACKET_CHALLENGE)
+            $this->stub->getPacket(\GameQ\Protocol::PACKET_CHALLENGE),
         );
 
         // Drop challenge and test for !challenge
@@ -134,19 +134,57 @@ class Protocol extends TestBase
 
         $reflection_property->setValue($this->stub, $packets);
 
-        $this->assertEquals($packets, $this->stub->getPacket('!challenge'));
+        self::assertEquals($packets, $this->stub->getPacket('!challenge'));
 
         // test hasChallenge
-        $this->assertFalse($this->stub->hasChallenge());
+        self::assertFalse($this->stub->hasChallenge());
+        self::assertSame([], $this->stub->getFollowUpPackets());
+    }
+
+    /**
+     * Test that binary challenges can be replaced repeatedly without format-string parsing
+     */
+    public function testChallengeApplicationUsesOriginalPacketTemplates(): void
+    {
+        $protocol = new class extends \GameQ\Protocol {
+            protected array $packets = [
+                self::PACKET_CHALLENGE => "plain%?packet",
+                self::PACKET_RULES => "rules:%s",
+            ];
+
+            public function processResponse(): array
+            {
+                return [];
+            }
+
+            public function applyChallenge(string $challenge): bool
+            {
+                return $this->challengeApply($challenge);
+            }
+        };
+
+        $protocol->applyChallenge("\x25\xFF");
+
+        self::assertSame(
+            [
+                \GameQ\Protocol::PACKET_CHALLENGE => "plain%?packet",
+                \GameQ\Protocol::PACKET_RULES => "rules:\x25\xFF",
+            ],
+            $protocol->getPacket(),
+        );
+
+        $protocol->applyChallenge('new');
+
+        self::assertSame('rules:new', $protocol->getPacket(\GameQ\Protocol::PACKET_RULES));
     }
 
     /**
      * Test options methods
      */
-    public function testOptions()
+    public function testOptions(): void
     {
         // Check the options getter
-        $this->assertEquals($this->options, $this->stub->options());
+        self::assertEquals($this->options, $this->stub->options());
 
         // Set new options and then check
         $new_options = [
@@ -155,6 +193,6 @@ class Protocol extends TestBase
 
         $this->stub->options($new_options);
 
-        $this->assertEquals($new_options, $this->stub->options());
+        self::assertEquals($new_options, $this->stub->options());
     }
 }

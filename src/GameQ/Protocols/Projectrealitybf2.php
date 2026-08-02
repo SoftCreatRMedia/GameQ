@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -28,7 +29,6 @@ namespace GameQ\Protocols;
  */
 class Projectrealitybf2 extends Bf2
 {
-
     /**
      * String name of this protocol class
      */

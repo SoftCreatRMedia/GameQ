@@ -2,6 +2,8 @@
 
 namespace GameQ\Tests;
 
+use InvalidArgumentException;
+
 /**
  * MockDNS class using monkey patching. Inspired by symfony/phpunit-bridge
  *
@@ -9,43 +11,50 @@ namespace GameQ\Tests;
  */
 class MockDNS
 {
-    private static $hosts = [];
+    /** @var array<string, string> */
+    private static array $hosts = [];
 
-    public static function mockHosts(array $hosts)
+    /**
+     * @param array<string, string> $hosts
+     */
+    public static function mockHosts(array $hosts): void
     {
         self::$hosts = $hosts;
     }
 
-    public static function gethostbyname($hostname)
+    public static function gethostbyname(string $hostname): string
     {
         // Redirect to original function if no overwrites has been defined
-        if (! self::$hosts) {
+        if (self::$hosts === []) {
             return \gethostbyname($hostname);
         }
 
-        // Check if a overwrite has been defined for this host
-        if (isset(self::$hosts[$hostname])) {
-            return self::$hosts[$hostname];
-        }
-
-        // Default behaivour, return the same on error
-        return $hostname;
+        // Return an override when available, or retain the host name on lookup failure.
+        return self::$hosts[$hostname] ?? $hostname;
     }
 
-    public static function register($class)
+    /**
+     * @param class-string $class
+     */
+    public static function register(string $class): void
     {
         // Store own namespace
         $self = static::class;
 
-        // Inject overwrite that call static on self (if they do not already exist)
-        foreach ([substr($class, 0, strrpos($class, '\\'))] as $ns) {
-            // Check if the function is not already defined, skip if so
-            if (\function_exists($ns.'\gethostbyname')) {
-                continue;
-            }
+        $namespaceSeparator = strrpos($class, '\\');
+
+        if ($namespaceSeparator === false) {
+            throw new InvalidArgumentException("Class '$class' does not have a namespace.");
+        }
+
+        $ns = substr($class, 0, $namespaceSeparator);
+
+        if (\function_exists($ns . '\gethostbyname')) {
+            return;
+        }
 
 
-            $code = <<<EOPHP
+        $code = <<<EOPHP
 namespace $ns;
 function gethostbyname(\$hostname)
 {
@@ -53,9 +62,8 @@ function gethostbyname(\$hostname)
 }
 EOPHP;
 
-            // Eval the script below, will define the function in the namespace effectively overwriting it
-            // https://www.php.net/manual/de/language.namespaces.fallback.php#116275
-            eval($code);
-        }
+        // Eval the script below, will define the function in the namespace effectively overwriting it
+        // https://www.php.net/manual/de/language.namespaces.fallback.php#116275
+        eval($code);
     }
 }

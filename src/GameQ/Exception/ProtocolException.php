@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -20,9 +21,11 @@
 
 namespace GameQ\Exception;
 
+use Exception;
+
 /**
  * @author Austin Bischoff <austin@codebeard.com>
  */
-class ProtocolException extends \Exception
+class ProtocolException extends Exception
 {
 }

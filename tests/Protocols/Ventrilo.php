@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,6 +19,8 @@
 
 namespace GameQ\Tests\Protocols;
 
+use GameQ\Exception\ProtocolException;
+
 /**
  * Test Class for Ventrilo
  *
@@ -28,26 +31,26 @@ class Ventrilo extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Ventrilo
+     * @var \GameQ\Protocols\Ventrilo
      */
-    protected $stub;
+    protected \GameQ\Protocols\Ventrilo $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
-        \GameQ\Protocol::PACKET_ALL =>
-            "V\xc8\xf4\xf9`\xa2\x1e\xa5M\xfb\x03\xccQN\xa1\x10\x95\xaf\xb2g\x17g\x812\xfbW\xfd\x8e\xd2\x22r\x034z\xbb\x98",
+    protected array $packets = [
+        \GameQ\Protocol::PACKET_ALL
+            => "V\xc8\xf4\xf9`\xa2\x1e\xa5M\xfb\x03\xccQN\xa1\x10\x95\xaf\xb2g\x17g\x812\xfbW\xfd\x8e\xd2\x22r\x034z\xbb\x98",
     ];
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Ventrilo();
@@ -56,31 +59,46 @@ class Ventrilo extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test responses for Ventrilo
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'ventrilo',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
+    }
+
+    public function testCorruptedResponseFailsChecksumValidation(): void
+    {
+        [$responses] = self::loadData()[0];
+        $response = $responses[0];
+        self::assertGreaterThan(20, strlen($response));
+        $response[20] = chr(ord($response[20]) ^ 0x01);
+        $responses[0] = $response;
+        $this->stub->packetResponse($responses);
+
+        $this->expectException(ProtocolException::class);
+        $this->expectExceptionMessageContains('Decrypted response checksum is invalid');
+
+        $this->stub->processResponse();
     }
 }

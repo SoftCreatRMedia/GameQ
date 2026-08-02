@@ -21,6 +21,7 @@ namespace GameQ\Protocols;
 
 use GameQ\Exception\ProtocolException;
 use GameQ\Server;
+use JsonException;
 
 /**
  * Epic Online Services Protocol Class
@@ -28,7 +29,7 @@ use GameQ\Server;
  * Serves as a base class for EOS-powered games.
  *
  * @package GameQ\Protocols
- * @author  H.Rouatbi
+ * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Eos extends Http
 {
@@ -63,42 +64,45 @@ class Eos extends Http
     /**
      * Deployment ID for the game or application
      *
-     * @var string
+     * @var string|null
      */
     protected ?string $deployment_id = null;
 
     /**
      * User ID for authentication
      *
-     * @var string
+     * @var string|null
      */
     protected ?string $user_id = null;
 
     /**
      * User secret key for authentication
      *
-     * @var string
+     * @var string|null
      */
     protected ?string $user_secret = null;
 
     /**
      * Holds the server ip so we can overwrite it back
      *
-     * @var string
+     * @var string|null
      */
     protected ?string $serverIp = null;
 
     /**
      * Holds the server port query so we can overwrite it back
      *
-     * @var int
+     * @var int|null
      */
     protected ?int $serverPortQuery = null;
+
+    /** @var list<array<string, mixed>>|null */
+    private ?array $queriedSessions = null;
 
     /**
      * Normalize some items
      *
-     * @var array
+     * @var array<string, array<string, string|list<string>>>
      */
     protected array $normalize = [
         // General
@@ -115,26 +119,69 @@ class Eos extends Http
     /**
      * Process the response from the EOS API
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
     public function processResponse(): array
     {
-        $index = ($this->grant_type === 'external_auth') ? 2 : 1;
-        $serverData = isset($this->packets_response[$index])
-            ? json_decode($this->packets_response[$index], true)
-            : null;
+        $sessions = $this->getServerSessions();
+        $session = reset($sessions);
 
-        $serverData = is_array($serverData) && isset($serverData['sessions']) && is_array($serverData['sessions'])
-            ? $serverData['sessions']
-            : null;
-
-        // If no server data, throw an exception
-        if (empty($serverData)) {
+        if (!is_array($session)) {
             throw new ProtocolException('No server data found. Server might be offline.');
         }
 
-        return $serverData;
+        return $this->normalizeStringKeyedArray($session);
+    }
+
+    /**
+     * Decode the session list returned by EOS.
+     *
+     * @return list<array<string, mixed>>
+     * @throws ProtocolException
+     */
+    protected function getServerSessions(): array
+    {
+        if ($this->queriedSessions !== null) {
+            if ($this->queriedSessions === []) {
+                throw new ProtocolException('No server data found. Server might be offline.');
+            }
+
+            return $this->queriedSessions;
+        }
+
+        $index = ($this->grant_type === 'external_auth') ? 2 : 1;
+
+        if (!isset($this->packets_response[$index])) {
+            throw new ProtocolException('No server data found. Server might be offline.');
+        }
+
+        try {
+            $serverData = json_decode($this->packets_response[$index], true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new ProtocolException('EOS returned invalid JSON server data.', 0, $exception);
+        }
+
+        $sessions = is_array($serverData) ? ($serverData['sessions'] ?? null) : null;
+
+        // If no server data, throw an exception
+        if (!is_array($sessions) || $sessions === []) {
+            throw new ProtocolException('No server data found. Server might be offline.');
+        }
+
+        $normalizedSessions = [];
+
+        foreach ($sessions as $session) {
+            if (is_array($session)) {
+                $normalizedSessions[] = $this->normalizeStringKeyedArray($session);
+            }
+        }
+
+        if ($normalizedSessions === []) {
+            throw new ProtocolException('EOS returned no valid server sessions.');
+        }
+
+        return $normalizedSessions;
     }
 
     /**
@@ -144,10 +191,11 @@ class Eos extends Http
      */
     public function beforeSend(Server $server): void
     {
+        $this->queriedSessions = null;
         $this->serverIp = $server->ip();
         $this->serverPortQuery = $server->portQuery();
 
-        if ($this->options['skip_http_requests'] ?? false) {
+        if (($this->options['skip_http_requests'] ?? false) === true) {
             return;
         }
 
@@ -159,7 +207,7 @@ class Eos extends Http
         }
 
         // Query for server data
-        $this->queryServers($authToken);
+        $this->queriedSessions = $this->queryServers($authToken);
     }
 
     /**
@@ -175,26 +223,36 @@ class Eos extends Http
 
         $authUrl = "https://api.epicgames.dev/auth/v1/oauth/token";
         $authHeaders = [
-            'Authorization: Basic ' . base64_encode("{$this->user_id}:{$this->user_secret}"),
-            'Accept-Encoding: deflate, gzip',
+            'Authorization: Basic ' . base64_encode($this->user_id . ':' . $this->user_secret),
             'Content-Type: application/x-www-form-urlencoded',
         ];
 
-        $authPostFields = "grant_type={$this->grant_type}&deployment_id={$this->deployment_id}";
+        $authFields = [
+            'grant_type' => $this->grant_type,
+            'deployment_id' => $this->deployment_id,
+        ];
 
         if ($this->grant_type === 'external_auth') {
             // Perform device authentication if necessary
             $deviceAuth = $this->deviceAuthentication();
-            if ($deviceAuth === null || !isset($deviceAuth['access_token'])) {
+
+            $deviceAccessToken = $deviceAuth['access_token'] ?? null;
+
+            if (!is_string($deviceAccessToken) || $deviceAccessToken === '') {
                 return null;
             }
-            $authPostFields .= "&external_auth_type=deviceid_access_token"
-                . "&external_auth_token={$deviceAuth['access_token']}"
-                . "&nonce=ABCHFA3qgUCJ1XTPAoGDEF&display_name=User";
+            $authFields['external_auth_type'] = 'deviceid_access_token';
+            $authFields['external_auth_token'] = $deviceAccessToken;
+            $authFields['nonce'] = 'ABCHFA3qgUCJ1XTPAoGDEF';
+            $authFields['display_name'] = 'User';
         }
 
         // Make the request to get the access token
-        $response = $this->httpRequest($authUrl, $authHeaders, $authPostFields);
+        $response = $this->httpRequest(
+            $authUrl,
+            $authHeaders,
+            http_build_query($authFields, '', '&', PHP_QUERY_RFC3986),
+        );
 
         return isset($response['access_token']) && is_string($response['access_token'])
             ? $response['access_token']
@@ -204,43 +262,55 @@ class Eos extends Http
     /**
      * Query the EOS server for matchmaking data
      *
-     * @return array|null
+     * @return list<array<string, mixed>>|null
      */
     protected function queryServers(string $authToken): ?array
     {
-        $serverQueryUrl = "https://api.epicgames.dev/matchmaking/v1/{$this->deployment_id}/filter";
+        $serverQueryUrl = 'https://api.epicgames.dev/matchmaking/v1/' . $this->deployment_id . '/filter';
         $queryHeaders = [
-            "Authorization: Bearer {$authToken}",
+            'Authorization: Bearer ' . $authToken,
             'Accept: application/json',
             'Content-Type: application/json',
         ];
 
-        $queryBody = json_encode([
-            'criteria' => [
-                [
-                    'key' => 'attributes.ADDRESS_s',
-                    'op' => 'EQUAL',
-                    'value' => $this->serverIp,
+        try {
+            $queryBody = json_encode([
+                'criteria' => [
+                    [
+                        'key' => 'attributes.ADDRESS_s',
+                        'op' => 'EQUAL',
+                        'value' => $this->serverIp,
+                    ],
                 ],
-            ],
-            'maxResults' => 200,
-        ]);
-
-        if ($queryBody === false) {
+                'maxResults' => 200,
+            ], JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
             return null;
         }
 
         $response = $this->httpRequest($serverQueryUrl, $queryHeaders, $queryBody);
 
-        return isset($response['sessions']) && is_array($response['sessions'])
-            ? $response['sessions']
-            : null;
+        $sessions = $response['sessions'] ?? null;
+
+        if (!is_array($sessions)) {
+            return null;
+        }
+
+        $normalizedSessions = [];
+
+        foreach ($sessions as $session) {
+            if (is_array($session)) {
+                $normalizedSessions[] = $this->normalizeStringKeyedArray($session);
+            }
+        }
+
+        return $normalizedSessions;
     }
 
     /**
      * Handle device authentication for external auth type
      *
-     * @return array|null
+     * @return array<string, mixed>|null
      */
     protected function deviceAuthentication(): ?array
     {
@@ -250,12 +320,11 @@ class Eos extends Http
 
         $deviceAuthUrl = "https://api.epicgames.dev/auth/v1/accounts/deviceid";
         $deviceAuthHeaders = [
-            'Authorization: Basic ' . base64_encode("{$this->user_id}:{$this->user_secret}"),
-            'Accept-Encoding: deflate, gzip',
+            'Authorization: Basic ' . base64_encode($this->user_id . ':' . $this->user_secret),
             'Content-Type: application/x-www-form-urlencoded',
         ];
 
-        $deviceAuthPostFields = "deviceModel=PC";
+        $deviceAuthPostFields = http_build_query(['deviceModel' => 'PC'], '', '&', PHP_QUERY_RFC3986);
 
         return $this->httpRequest($deviceAuthUrl, $deviceAuthHeaders, $deviceAuthPostFields);
     }
@@ -263,45 +332,55 @@ class Eos extends Http
     /**
      * Execute an HTTP request
      *
-     * @param string[] $headers
-     * @return array|null
+     * @param list<string> $headers
+     * @return array<string, mixed>|null
      */
     protected function httpRequest(string $url, array $headers, string $postFields): ?array
     {
+        if ($url === '') {
+            return null;
+        }
+
         $ch = curl_init();
 
         if ($ch === false) {
             return null;
         }
 
+        $timeout = max(1, $this->normalizeInteger($this->options['http_timeout'] ?? 5, 5));
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_POST => true,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_CONNECTTIMEOUT => $timeout,
+            CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_MAXFILESIZE => 8 * 1024 * 1024,
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_POSTFIELDS => $postFields,
         ]);
 
         $response = curl_exec($ch);
+        $statusCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
 
-        if (!is_string($response)) {
+        if (!is_string($response) || $statusCode < 200 || $statusCode >= 300) {
             return null;
         }
 
-        $this->packets_response[] = $response;
+        try {
+            $decodedResponse = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return null;
+        }
 
-        $decodedResponse = json_decode($response, true);
-
-        return is_array($decodedResponse) ? $decodedResponse : null;
+        return $this->normalizeStringKeyedArray($decodedResponse);
     }
 
     /**
      * Safely retrieves an attribute from an array or returns a default value.
      *
-     * @param array $attributes
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
+     * @param array<string, mixed> $attributes
      */
     protected function getAttribute(array $attributes, string $key, mixed $default = null): mixed
     {

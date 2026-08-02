@@ -1,48 +1,94 @@
-# GameQ Fork by SoftCreatR Media
+# GameQ
+
 [![CI](https://github.com/SoftCreatRMedia/GameQ/actions/workflows/Tests.yml/badge.svg)](https://github.com/SoftCreatRMedia/GameQ/actions/workflows/Tests.yml)
-[![License](https://img.shields.io/badge/license-LGPL-blue.svg?style=flat)](https://packagist.org/packages/softcreatr/gameq)
+[![Latest Stable Version](https://img.shields.io/packagist/v/softcreatr/gameq.svg)](https://packagist.org/packages/softcreatr/gameq)
+[![PHP Version](https://img.shields.io/packagist/dependency-v/softcreatr/gameq/php.svg)](https://packagist.org/packages/softcreatr/gameq)
+[![License](https://img.shields.io/badge/license-LGPL--3.0--or--later-blue.svg)](LICENSE.lgpl)
 
-GameQ is a PHP library that allows you to query multiple types of multiplayer game & voice servers at the same time.
+GameQ is a PHP library for querying many kinds of multiplayer game and voice servers. A single `GameQ` instance can query mixed UDP, TCP, TLS, HTTP, and master-list protocols and return a consistent result structure.
 
-This repository is a maintained fork of [Austinb/GameQ](https://github.com/Austinb/GameQ) by [SoftCreatR Media](https://softcreatr.dev).
-While we don't plan to add new games for now, we'll ensure compatibility with the latest PHP versions and fix issues as they arise.
+This repository is the maintained [SoftCreatR Media fork](https://github.com/SoftCreatRMedia/GameQ) of [Austinb/GameQ](https://github.com/Austinb/GameQ). Version 5 targets PHP 8.1 and newer, retains the GameQ 4.x public and protected API, and adds current protocol support, stricter parsing, bounded batching, and modern quality checks.
 
-## Requirements
-* PHP 8.1+ - [Tested](https://github.com/SoftCreatRMedia/GameQ/actions/workflows/Tests.yml) in PHP 8.1, 8.2 and 8.3
-* [Bzip2](http://www.php.net/manual/en/book.bzip2.php) - Used for A2S compressed responses
+## Highlights
+
+- 170 game, voice-server, and generic protocol identifiers.
+- Concurrent mixed-protocol queries with configurable batch and response limits.
+- Normalized `gq_*` fields plus protocol-native data, players, teams, and join links.
+- Broad coverage through established families such as Source and GoldSource, GameSpy, Quake, Unreal, Doom 3, Frostbite, RakNet, and dedicated voice-server protocols.
+- Direct UDP, TCP, TLS, and SSL queries alongside protocols that use HTTP APIs, plugins, or public master lists.
+- PHPStan at maximum level, PHPUnit coverage for captured protocol responses, and automated compatibility checks against GameQ 4.0.0.
 
 ## Installation
-#### [Composer](https://getcomposer.org/)
-This method assumes you already have composer [installed](https://getcomposer.org/doc/00-intro.md) and working properly. Add `softcreatr/gameq` as a requirement to composer.json by using `composer require softcreatr/gameq:^4.0.0` or by manually adding the following to the *composer.json* file in the **require** section:
 
-```json
-"softcreatr/gameq": "^4.0.0"
+Composer is recommended:
+
+```sh
+composer require softcreatr/gameq:^5.0
 ```
 
-Update your packages with `composer update` or install with `composer install`.
+GameQ requires PHP 8.1 or newer and the `bz2`, `curl`, `libxml`, `simplexml`, and `xml` extensions. See the [installation guide](https://github.com/SoftCreatRMedia/GameQ/wiki/Installation) for standalone loading and platform details.
 
-#### Standalone Library
-Download the [latest version](https://github.com/SoftCreatRMedia/GameQ/releases) of the library and unpack it into your project. Add the following to your bootstrap file:
+## Quick start
 
 ```php
-require_once('/path/to/src/GameQ/Autoloader.php');
-```
-The `Autoloader.php` file provides the same autoloading functionality as the Composer installation.
+<?php
 
-## Example
-```php
-$GameQ = new \GameQ\GameQ();
-$GameQ->addServer([
-    'type' => 'css',
-    'host' => '127.0.0.1:27015',
+require __DIR__ . '/vendor/autoload.php';
+
+use GameQ\GameQ;
+
+$gameQ = new GameQ();
+$gameQ->addServers([
+    [
+        'id' => 'source-server',
+        'type' => 'css',
+        'host' => '192.0.2.10:27015',
+    ],
+    [
+        'id' => 'unreal-server',
+        'type' => 'ut2004',
+        'host' => '192.0.2.20:7777',
+    ],
 ]);
-$results = $GameQ->process();
-```
-Need more? See [Examples](https://github.com/Austinb/GameQ/wiki/Examples-v3).
 
-## Contributing 
- 
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
+$gameQ
+    ->setOption('timeout', 5)
+    ->setOption('max_servers_per_batch', 50);
+
+$results = $gameQ->process();
+
+if ($results['source-server']['gq_online']) {
+    printf(
+        "%s: %d/%d players\n",
+        $results['source-server']['gq_hostname'],
+        $results['source-server']['gq_numplayers'],
+        $results['source-server']['gq_maxplayers'],
+    );
+}
+```
+
+The port in `host` is always the client/connect port. GameQ calculates the query port where a protocol has a known offset; use the per-server `query_port` option when the server uses a custom query port.
+
+## Documentation
+
+Project documentation is maintained in the separate [GameQ Wiki](https://github.com/SoftCreatRMedia/GameQ/wiki), updated from the useful parts of the [upstream wiki](https://github.com/Austinb/GameQ/wiki) for this fork and version 5.
+
+| Start here | Operate GameQ | Extend GameQ |
+|---|---|---|
+| [Installation](https://github.com/SoftCreatRMedia/GameQ/wiki/Installation) | [Global options](https://github.com/SoftCreatRMedia/GameQ/wiki/Global-Options) | [Architecture](https://github.com/SoftCreatRMedia/GameQ/wiki/Architecture) |
+| [Quick start and examples](https://github.com/SoftCreatRMedia/GameQ/wiki/Quick-Start) | [Results and normalized fields](https://github.com/SoftCreatRMedia/GameQ/wiki/Results) | [Adding a protocol](https://github.com/SoftCreatRMedia/GameQ/wiki/Adding-a-Protocol) |
+| [Server definitions and ports](https://github.com/SoftCreatRMedia/GameQ/wiki/Servers) | [Performance and batching](https://github.com/SoftCreatRMedia/GameQ/wiki/Performance) | [Tests and fixtures](https://github.com/SoftCreatRMedia/GameQ/wiki/Testing) |
+| [Supported identifiers](https://github.com/SoftCreatRMedia/GameQ/wiki/Supported-Servers) and [protocol families](https://github.com/SoftCreatRMedia/GameQ/wiki/Protocol-Families) | [Troubleshooting](https://github.com/SoftCreatRMedia/GameQ/wiki/Troubleshooting) | [Upgrading from 4.x](https://github.com/SoftCreatRMedia/GameQ/wiki/Upgrading-from-4.x) |
+
+Protocol-specific credentials and HTTP endpoints need additional care. Read [protocol options](https://github.com/SoftCreatRMedia/GameQ/wiki/Protocol-Options) and [security guidance](https://github.com/SoftCreatRMedia/GameQ/wiki/Security) before exposing queries through a public application.
+
+## Support and contributing
+
+- Report reproducible problems through [GitHub Issues](https://github.com/SoftCreatRMedia/GameQ/issues).
+- See [CONTRIBUTING.md](CONTRIBUTING.md) before submitting changes.
+- Run `composer test` for the complete local quality suite.
+- Review [CHANGELOG.md](CHANGELOG.md) before upgrading.
 
 ## License
-See [LICENSE](LICENSE.lgpl) for more information
+
+GameQ is licensed under the [GNU Lesser General Public License 3.0 or later](LICENSE.lgpl).

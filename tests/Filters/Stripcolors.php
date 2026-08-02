@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,6 +19,8 @@
 
 namespace GameQ\Tests\Filters;
 
+use GameQ\Exception\ServerException;
+
 /**
  * Class for testing Stripcolors filter
  *
@@ -25,62 +28,40 @@ namespace GameQ\Tests\Filters;
  */
 class Stripcolors extends Base
 {
-
     /**
      * Test the filter for Stripcolors
      *
-     * @dataProvider loadData
      *
-     * @param $protocol
-     * @param $raw
-     * @param $filtered
+     * @param non-empty-array<string, array<string, mixed>> $raw
+     * @param non-empty-array<string, array<string, mixed>> $filtered
+     * @throws ServerException
      */
-    public function testFiltered($protocol, $raw, $filtered)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testFiltered(string $protocol, array $raw, array $filtered): void
     {
-
         // Pop the key from the raw response
-        $host = key($raw);
+        $host = self::firstServerKey($raw);
 
-        // Create a mock server
-        $server = $this->getMockBuilder('\GameQ\Server')
-            ->setConstructorArgs([
-                [
-                    \GameQ\Server::SERVER_HOST => $host,
-                    \GameQ\Server::SERVER_TYPE => $protocol,
-                ],
-            ])
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
+        $server = new \GameQ\Server([
+            \GameQ\Server::SERVER_HOST => $host,
+            \GameQ\Server::SERVER_TYPE => $protocol,
+        ]);
+        $filter = new \GameQ\Filters\Stripcolors();
 
-        // Create a mock filter
-        $filter = $this->getMockBuilder('\GameQ\Filters\Stripcolors')
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
-
-        $this->assertEquals($filtered[$host], $filter->apply($raw[$host], $server));
+        self::assertEquals($filtered[$host], $filter->apply($raw[$host], $server));
     }
 
     /**
      * Test for empty data pass to filter
      */
-    public function testEmpty()
+    public function testEmpty(): void
     {
-        // Create a mock server
-        $server = $this->getMockBuilder('\GameQ\Server')
-            ->setConstructorArgs([
-                [
-                    \GameQ\Server::SERVER_HOST => '127.0.0.1:28960',
-                    \GameQ\Server::SERVER_TYPE => 'quake3',
-                ],
-            ])
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
+        $server = new \GameQ\Server([
+            \GameQ\Server::SERVER_HOST => '127.0.0.1:28960',
+            \GameQ\Server::SERVER_TYPE => 'quake3',
+        ]);
+        $filter = new \GameQ\Filters\Stripcolors();
 
-        // Create a mock filter
-        $filter = $this->getMockBuilder('\GameQ\Filters\Stripcolors')
-            ->enableProxyingToOriginalMethods()
-            ->getMock();
-
-        $this->assertEmpty($filter->apply([], $server));
+        self::assertEmpty($filter->apply([], $server));
     }
 }

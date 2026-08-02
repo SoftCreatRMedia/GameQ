@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -20,6 +21,9 @@ namespace GameQ\Protocols;
 
 use GameQ\Buffer;
 use GameQ\Exception\ProtocolException;
+use GameQ\Exception\QueryException;
+use GameQ\Exception\ServerException;
+use GameQ\GameQ;
 use GameQ\Protocol;
 use GameQ\Result;
 use GameQ\Server;
@@ -35,10 +39,10 @@ use GameQ\Server;
  *
  * Adding FiveM Player List by
  * @author Jesse Lukas <eranio@g-one.org>
+ * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Cfx extends Protocol
 {
-
     /**
      * Array of packets we want to look up.
      * Each key should correspond to a defined method in this or a parent class
@@ -72,8 +76,13 @@ class Cfx extends Protocol
 
     /**
      * Holds the player list so we can overwrite it back
+     *
+     * @var list<array<string, mixed>>
      */
     protected array $playerList = [];
+
+    /** @var array<string, mixed> */
+    private array $infoData = [];
 
     /**
      * Normalize settings for this protocol
@@ -93,27 +102,87 @@ class Cfx extends Protocol
     ];
 
     /**
-     * Get FiveM players list using a sub query
+     * Get the FiveM player list and info.json data using HTTP subqueries.
      */
     public function beforeSend(Server $server): void
     {
-        $GameQ = new \GameQ\GameQ();
-        $GameQ->addServer([
-            'type' => 'cfxplayers',
-            'host' => "$server->ip:$server->port_query",
-        ]);
-        $results = $GameQ->process();
-        $this->playerList = $results[0][0] ?? [];
+        $webPort = $this->normalizeInteger($this->options['web_port'] ?? $server->portQuery(), $server->portQuery());
+
+        if ($webPort < 1 || $webPort > 65535) {
+            $webPort = $server->portQuery();
+        }
+
+        $host = $server->ip();
+
+        if (str_contains($host, ':') && !str_starts_with($host, '[')) {
+            $host = "[$host]";
+        }
+
+        $webAddress = "$host:$webPort";
+
+        try {
+            $gameQ = new GameQ();
+            $gameQ->addServers([
+                [
+                    Server::SERVER_ID => 'players',
+                    Server::SERVER_TYPE => 'cfxplayers',
+                    Server::SERVER_HOST => $webAddress,
+                ],
+                [
+                    Server::SERVER_ID => 'info',
+                    Server::SERVER_TYPE => 'cfxinfo',
+                    Server::SERVER_HOST => $webAddress,
+                ],
+            ]);
+            $results = $gameQ->process();
+        } catch (ProtocolException | QueryException | ServerException) {
+            return;
+        }
+
+        $playerResult = $results['players'] ?? null;
+
+        if (is_array($playerResult)) {
+            $players = $playerResult['players'] ?? [];
+
+            if (is_array($players)) {
+                $this->playerList = [];
+
+                foreach ($players as $player) {
+                    if (!is_array($player)) {
+                        continue;
+                    }
+
+                    $normalizedPlayer = array_filter($player, is_string(...), ARRAY_FILTER_USE_KEY);
+                    $this->playerList[] = $normalizedPlayer;
+                }
+            }
+        }
+
+        $infoResult = $results['info'] ?? null;
+
+        if (is_array($infoResult) && ($infoResult['gq_online'] ?? false) === true) {
+            $this->infoData = $this->normalizeStringKeyedArray($infoResult);
+        }
     }
 
     /**
      * Process the response
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
+        if ($this->packets_response === [] && $this->infoData !== []) {
+            $result = new Result();
+            $result->add('dedicated', true);
+            $result->add('gamename', 'CitizenFX');
+            $result->add('clients', count($this->playerList));
+            $this->addHttpData($result);
+
+            return $result->fetch();
+        }
+
         // In case it comes back as multiple packets (it shouldn't)
         $buffer = new Buffer(implode('', $this->packets_response));
 
@@ -121,12 +190,12 @@ class Cfx extends Protocol
         $response_type = $buffer->readString(PHP_EOL);
 
         // Figure out which packet response this is
-        if (empty($response_type) || !array_key_exists($response_type, $this->responses)) {
+        if ($response_type === '' || !array_key_exists($response_type, $this->responses)) {
             throw new ProtocolException(__METHOD__ . " response type '$response_type' is not valid");
         }
 
         // Offload the call
-        return $this->{$this->responses[$response_type]}($buffer);
+        return $this->processResponseMethod($this->responses[$response_type], $buffer);
     }
 
     /*
@@ -136,14 +205,15 @@ class Cfx extends Protocol
     /**
      * Handle processing the status response
      *
-     * @return array
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    protected function processStatus(Buffer $buffer)
+    protected function processStatus(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
 
-        // Lets peek and see if the data starts with a \
+        // Let's peek and see if the data starts with a \
         if ($buffer->lookAhead() === '\\') {
             // Burn the first one
             $buffer->skip();
@@ -155,7 +225,7 @@ class Cfx extends Protocol
         $itemCount = count($data);
 
         // Now lets loop the array
-        for ($x = 0; $x < $itemCount; $x += 2) {
+        for ($x = 0; $x + 1 < $itemCount; $x += 2) {
             // Set some local vars
             $key = $data[$x];
             $val = $data[$x + 1];
@@ -168,11 +238,43 @@ class Cfx extends Protocol
             $result->add($key, $val);
         }
 
-        // Add result of sub http-protocol if available
-        if ($this->playerList) {
+        $this->addHttpData($result);
+
+        return $result->fetch();
+    }
+
+    private function addHttpData(Result $result): void
+    {
+        if ($this->playerList !== []) {
             $result->add('players', $this->playerList);
         }
 
-        return $result->fetch();
+        if ($this->infoData !== []) {
+            $vars = $this->normalizeStringKeyedArray($this->infoData['vars'] ?? null);
+            $version = $this->infoData['version'] ?? null;
+
+            if (is_scalar($version)) {
+                $result->add('version', (string) $version);
+            }
+
+            $discord = $vars['Discord'] ?? $vars['discord'] ?? null;
+            $locale = $vars['locale'] ?? null;
+
+            if (is_scalar($discord)) {
+                $result->add('fivem_discord', (string) $discord);
+            }
+
+            if (is_scalar($locale)) {
+                $result->add('fivem_locale', (string) $locale);
+            }
+
+            if ($result->get('sv_maxclients') === null) {
+                $maxClients = $vars['sv_maxClients'] ?? $vars['sv_maxclients'] ?? null;
+
+                if (is_scalar($maxClients)) {
+                    $result->add('sv_maxclients', (string) $maxClients);
+                }
+            }
+        }
     }
 }

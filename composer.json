@@ -1,11 +1,13 @@
 {
   "name": "softcreatr/gameq",
-  "description": "A maintained fork of the famous PHP Gameserver Status Query Library GameQ by Austinb",
-  "license": "LGPL-3.0+",
-  "version": "4.0.0",
+  "type": "library",
+  "description": "A maintained PHP game-server status query library based on GameQ by Austinb",
+  "license": "LGPL-3.0-or-later",
   "keywords": [
     "gameq",
-    "serverstatus"
+    "game server",
+    "query",
+    "server status"
   ],
   "authors": [
     {
@@ -62,25 +64,28 @@
   ],
   "support": {
     "issues": "https://github.com/SoftCreatRMedia/GameQ/issues",
-    "wiki": "https://github.com/Austinb/GameQ/wiki",
+    "wiki": "https://github.com/SoftCreatRMedia/GameQ/wiki",
     "source": "https://github.com/SoftCreatRMedia/GameQ"
   },
   "require": {
-    "php": ">=8.1",
+    "php": "^8.1",
     "ext-bz2": "*",
     "ext-curl": "*",
+    "ext-libxml": "*",
     "ext-simplexml": "*",
     "ext-xml": "*"
   },
   "require-dev": {
-    "corneltek/getoptionkit": "^2",
+    "corneltek/getoptionkit": "^2.7",
+    "php-parallel-lint/php-parallel-lint": "^1.4",
     "phpstan/extension-installer": "^1.4",
-    "phpstan/phpstan": "^1.12",
-    "phpstan/phpstan-deprecation-rules": "^1.2",
-    "phpstan/phpstan-phpunit": "^1.4",
-    "phpunit/php-invoker": "*",
-    "phpunit/phpunit": "^9.0",
-    "squizlabs/php_codesniffer": "4.*@stable"
+    "phpstan/phpstan": "^2.2",
+    "phpstan/phpstan-deprecation-rules": "^2.0",
+    "phpstan/phpstan-phpunit": "^2.0",
+    "phpstan/phpstan-strict-rules": "^2.0",
+    "phpunit/phpunit": "^10.5 || ^11.5 || ^12.5 || ^13.1",
+    "roave/backward-compatibility-check": "^8.1",
+    "squizlabs/php_codesniffer": "^4.0"
   },
   "autoload": {
     "psr-4": {
@@ -95,19 +100,28 @@
   "config": {
     "allow-plugins": {
       "phpstan/extension-installer": true
-    }
+    },
+    "preferred-install": "dist",
+    "sort-packages": true
   },
   "scripts": {
-    "phpcs": "vendor/bin/phpcs src tests --extensions=php --ignore=bootstrap --report=checkstyle --report-file=build/logs/checkstyle.xml --standard=build/config/phpcs.xml -v",
-    "phpstan": "vendor/bin/phpstan analyse src",
+    "bc-check": "roave-backward-compatibility-check --from=5.0.0 --to=HEAD",
+    "lint": "parallel-lint --colors src tests examples",
+    "phpcbf": "phpcbf --standard=build/config/phpcs.xml",
+    "phpcs": "phpcs --standard=build/config/phpcs.xml",
+    "phpstan": "phpstan analyse --no-progress",
     "phpunit": "vendor/bin/phpunit",
     "test": [
+      "@lint",
       "@phpcs",
       "@phpstan",
       "@phpunit"
     ]
   },
   "scripts-descriptions": {
+    "bc-check": "Check the public API for backwards-incompatible changes since 5.0.0",
+    "lint": "Check all PHP files for syntax errors",
+    "phpcbf": "Automatically fix coding-standard violations",
     "phpcs": "Run PHP Code Style checks",
     "phpstan": "Run PHPStan checks",
     "phpunit": "Run PHPUnit tests",

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,10 +19,10 @@
 
 namespace GameQ\Protocols;
 
-use GameQ\Protocol;
 use GameQ\Buffer;
-use GameQ\Result;
 use GameQ\Exception\ProtocolException;
+use GameQ\Protocol;
+use GameQ\Result;
 
 /**
  * Mafia 2 Multiplayer Protocol Class
@@ -100,10 +101,10 @@ class M2mp extends Protocol
     /**
      * Handle response from the server
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Make a buffer
         $buffer = new Buffer(implode('', $this->packets_response));
@@ -117,32 +118,33 @@ class M2mp extends Protocol
             throw new ProtocolException(__METHOD__ . " response type '" . bin2hex($header) . "' is not valid");
         }
 
-        return $this->{$this->responses[$header]}($buffer);
+        return $this->processResponseMethod($this->responses[$header], $buffer);
     }
 
     /**
      * Process the status response
      *
-     * @return array
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    protected function processStatus(Buffer $buffer)
+    protected function processStatus(Buffer $buffer): array
     {
         // We need to split the data and offload
         $results = $this->processServerInfo($buffer);
 
-        return array_merge_recursive(
+        return array_merge(
             $results,
-            $this->processPlayers($buffer)
+            $this->processPlayers($buffer),
         );
     }
 
     /**
      * Handle processing the server information
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processServerInfo(Buffer $buffer)
+    protected function processServerInfo(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
@@ -164,10 +166,10 @@ class M2mp extends Protocol
     /**
      * Handle processing of player data
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();

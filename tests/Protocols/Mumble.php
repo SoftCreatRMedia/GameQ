@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,6 +19,8 @@
 
 namespace GameQ\Tests\Protocols;
 
+use JsonException;
+
 /**
  * Test Class for Mumble
  *
@@ -28,25 +31,25 @@ class Mumble extends Base
     /**
      * Holds stub on setup
      *
-     * @type \GameQ\Protocols\Mumble
+     * @var \GameQ\Protocols\Mumble
      */
-    protected $stub;
+    protected \GameQ\Protocols\Mumble $stub;
 
     /**
      * Holds the expected packets for this protocol class
      *
-     * @type array
+     * @var array<string, string>
      */
-    protected $packets = [
+    protected array $packets = [
         \GameQ\Protocol::PACKET_ALL => "\x6A\x73\x6F\x6E",
     ];
 
     /**
      * Setup
      *
-     * @before
      */
-    public function customSetUp()
+    #[\PHPUnit\Framework\Attributes\Before]
+    public function customSetUp(): void
     {
         // Create the stub class
         $this->stub = new \GameQ\Protocols\Mumble();
@@ -55,41 +58,41 @@ class Mumble extends Base
     /**
      * Test the packets to make sure they are correct for source
      */
-    public function testPackets()
+    public function testPackets(): void
     {
         // Test to make sure packets are defined properly
-        $this->assertEquals($this->packets, $this->stub->getPacket());
+        self::assertEquals($this->packets, $this->stub->getPacket());
     }
 
     /**
      * Test non-JSON formatted response
      */
-    public function testBadResponseFormat()
+    public function testBadResponseFormat(): void
     {
-        $this->expectException(\JsonException::class);
+        $this->expectException(JsonException::class);
         // Should fail out
-        $this->queryTest('127.0.0.1:27015', 'mumble', [ '{"key1": "val", "key2" :}' ], true);
+        $this->queryTest('127.0.0.1:64738', 'mumble', [ '{"key1": "val", "key2" :}' ], true);
     }
 
     /**
      * Test responses for Mumble
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'mumble',
-            $responses
+            $responses,
         );
 
-        $this->assertEquals($result[$server], $testResult);
+        self::assertEquals($result[$server], $testResult);
     }
 }

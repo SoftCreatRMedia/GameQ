@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -23,27 +24,28 @@ namespace GameQ\Tests\Protocols;
  *
  * @package GameQ\Tests\Protocols
  */
+#[\PHPUnit\Framework\Attributes\RequiresPhpExtension('bz2')]
 class Ffe extends Base
 {
     /**
      * Test responses for Ffe
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'ffe',
-            $responses
+            $responses,
         );
 
-        $this->assertEqualsDelta($result[$server], $testResult, 0.000000001);
+        self::assertEqualsDelta($result[$server], $testResult, 0.000000001);
     }
 }

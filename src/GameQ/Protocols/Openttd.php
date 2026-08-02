@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,10 +19,10 @@
 
 namespace GameQ\Protocols;
 
-use GameQ\Protocol;
 use GameQ\Buffer;
-use GameQ\Result;
 use GameQ\Exception\ProtocolException;
+use GameQ\Protocol;
+use GameQ\Result;
 
 /**
  * OpenTTD Protocol Class
@@ -80,10 +81,10 @@ class Openttd extends Protocol
     /**
      * Handle response from the server
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
         // Make a buffer
         $buffer = new Buffer(implode('', $this->packets_response));
@@ -94,13 +95,13 @@ class Openttd extends Protocol
         // Grab the header
         $length = $buffer->readInt16();
         //$type = $buffer->readInt8();
-        $buffer->skip(); // Skip the "$type" as its not used in the code.
+        $buffer->skip(); // Skip the "$type" as it's not used in the code.
 
         // Header
         // Figure out which packet response this is
         if ($packetLength !== $length) {
             throw new ProtocolException(
-                __METHOD__ . " header length '" .$length . "' does not match packet length '" . $packetLength . "'."
+                __METHOD__ . " header length '" . $length . "' does not match packet length '" . $packetLength . "'.",
             );
         }
 
@@ -110,60 +111,62 @@ class Openttd extends Protocol
     /**
      * Handle processing the server information
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processServerInfo(Buffer $buffer)
+    protected function processServerInfo(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
-       
+
         $protocol_version = $buffer->readInt8();
         $result->add('protocol_version', $protocol_version);
 
-        switch ($protocol_version) {
-            case 4:
-                $num_grfs = $buffer->readInt8(); #number of grfs
-                $result->add('num_grfs', $num_grfs);
-                //$buffer->skip ($num_grfs * 20); #skip grfs id and md5 hash
+        if ($protocol_version === 4) {
+            $numGrfs = $buffer->readInt8();
+            $result->add('num_grfs', $numGrfs);
 
-                for ($i=0; $i<$num_grfs; $i++) {
-                    $result->add('grfs_'.$i.'_ID', strtoupper(bin2hex($buffer->read(4))));
-                    $result->add('grfs_'.$i.'_MD5', strtoupper(bin2hex($buffer->read(16))));
-                }
-                // No break, cascades all the down even if case is meet
-            case 3:
-                $result->add('game_date', $buffer->readInt32());
-                $result->add('start_date', $buffer->readInt32());
-                // Cascades all the way down even if case is meet
-            case 2:
-                $result->add('companies_max', $buffer->readInt8());
-                $result->add('companies_on', $buffer->readInt8());
-                $result->add('spectators_max', $buffer->readInt8());
-                // Cascades all the way down even if case is meet
-            case 1:
-                $result->add('hostname', $buffer->readString());
-                $result->add('version', $buffer->readString());
-                
-                $language = $buffer->readInt8();
-                $result->add('language', $language);
-                $result->add('language_icon', '//media.openttd.org/images/server/'.$language.'_lang.gif');
+            for ($i = 0; $i < $numGrfs; $i++) {
+                $result->add('grfs_' . $i . '_ID', strtoupper(bin2hex($buffer->read(4))));
+                $result->add('grfs_' . $i . '_MD5', strtoupper(bin2hex($buffer->read(16))));
+            }
+        }
 
-                $result->add('password', $buffer->readInt8());
-                $result->add('max_clients', $buffer->readInt8());
-                $result->add('clients', $buffer->readInt8());
-                $result->add('spectators', $buffer->readInt8());
-                if ($protocol_version < 3) {
-                    $days = ( 365 * 1920 + 1920 / 4 - 1920 / 100 + 1920 / 400 );
-                    $result->add('game_date', $buffer->readInt16() + $days);
-                    $result->add('start_date', $buffer->readInt16() + $days);
-                }
-                $result->add('map', $buffer->readString());
-                $result->add('map_width', $buffer->readInt16());
-                $result->add('map_height', $buffer->readInt16());
-                $result->add('map_type', $buffer->readInt8());
-                $result->add('dedicated', $buffer->readInt8());
-                // Cascades all the way down even if case is meet
+        if ($protocol_version === 3 || $protocol_version === 4) {
+            $result->add('game_date', $buffer->readInt32());
+            $result->add('start_date', $buffer->readInt32());
+        }
+
+        if ($protocol_version >= 2 && $protocol_version <= 4) {
+            $result->add('companies_max', $buffer->readInt8());
+            $result->add('companies_on', $buffer->readInt8());
+            $result->add('spectators_max', $buffer->readInt8());
+        }
+
+        if ($protocol_version >= 1 && $protocol_version <= 4) {
+            $result->add('hostname', $buffer->readString());
+            $result->add('version', $buffer->readString());
+
+            $language = $buffer->readInt8();
+            $result->add('language', $language);
+            $result->add('language_icon', '//media.openttd.org/images/server/' . $language . '_lang.gif');
+
+            $result->add('password', $buffer->readInt8());
+            $result->add('max_clients', $buffer->readInt8());
+            $result->add('clients', $buffer->readInt8());
+            $result->add('spectators', $buffer->readInt8());
+
+            if ($protocol_version < 3) {
+                $days = (365 * 1920 + 1920 / 4 - 1920 / 100 + 1920 / 400);
+                $result->add('game_date', $buffer->readInt16() + $days);
+                $result->add('start_date', $buffer->readInt16() + $days);
+            }
+
+            $result->add('map', $buffer->readString());
+            $result->add('map_width', $buffer->readInt16());
+            $result->add('map_height', $buffer->readInt16());
+            $result->add('map_type', $buffer->readInt8());
+            $result->add('dedicated', $buffer->readInt8());
         }
 
         return $result->fetch();

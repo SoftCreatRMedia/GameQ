@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -28,22 +29,22 @@ class Tf2 extends Base
     /**
      * Test responses for Tf2
      *
-     * @dataProvider loadData
      *
-     * @param $responses
-     * @param $result
+     * @param list<string> $responses
+     * @param non-empty-array<string, array<string, mixed>> $result
      */
-    public function testResponses($responses, $result)
+    #[\PHPUnit\Framework\Attributes\DataProvider('loadData')]
+    public function testResponses(array $responses, array $result): void
     {
         // Pull the first key off the array this is the server ip:port
-        $server = key($result);
+        $server = self::firstServerKey($result);
 
         $testResult = $this->queryTest(
             $server,
             'tf2',
-            $responses
+            $responses,
         );
 
-        $this->assertEqualsDelta($result[$server], $testResult, 0.000000001);
+        self::assertEqualsDelta($result[$server], $testResult, 0.000000001);
     }
 }

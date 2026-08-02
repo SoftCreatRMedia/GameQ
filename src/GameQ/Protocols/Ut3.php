@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,6 +19,8 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Exception\ProtocolException;
+
 /**
  * Unreal Tournament 3 Protocol Class
  *
@@ -29,7 +32,6 @@ namespace GameQ\Protocols;
  */
 class Ut3 extends Gamespy3
 {
-
     /**
      * String name of this protocol class
      */
@@ -55,11 +57,11 @@ class Ut3 extends Gamespy3
     /**
      * Overload the response process so we can make some changes
      *
-     * @return mixed
+     * @return array<string, mixed>
+     * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
         // Grab the result from the parent
         $result = parent::processResponse();
 
@@ -82,7 +84,7 @@ class Ut3 extends Gamespy3
         $this->renameResult($result, 'p268435717', 'stock_mutators');
 
         // Put custom mutators into an array
-        if (isset($result['custom_mutators'])) {
+        if (isset($result['custom_mutators']) && is_string($result['custom_mutators'])) {
             $result['custom_mutators'] = explode("\x1c", $result['custom_mutators']);
         }
 
@@ -94,11 +96,12 @@ class Ut3 extends Gamespy3
     }
 
     /**
-     * Dirty hack to rename result entries into something more useful
+     * Rename a result entry into something more useful
+     *
+     * @param array<string, mixed> $result
      */
     protected function renameResult(array &$result, string $old, string $new): void
     {
-
         // Check to see if the old item is there
         if (isset($result[$old])) {
             $result[$new] = $result[$old];
@@ -107,11 +110,13 @@ class Ut3 extends Gamespy3
     }
 
     /**
-     * Dirty hack to delete result items
+     * Delete result items that are not useful to callers
+     *
+     * @param array<string, mixed> $result
+     * @param list<string> $array
      */
     protected function deleteResult(array &$result, array $array): void
     {
-
         foreach ($array as $key) {
             unset($result[$key]);
         }

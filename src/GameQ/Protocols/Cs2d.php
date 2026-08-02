@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This file is part of GameQ.
  *
@@ -18,9 +19,9 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Buffer;
 use GameQ\Exception\ProtocolException;
 use GameQ\Protocol;
-use GameQ\Buffer;
 use GameQ\Result;
 
 /**
@@ -33,6 +34,7 @@ use GameQ\Result;
  */
 class Cs2d extends Protocol
 {
+    use GroupedResponseTrait;
 
     /**
      * Array of packets we want to query.
@@ -99,23 +101,27 @@ class Cs2d extends Protocol
     /**
      * Process the response for the Tibia server
      *
-     * @return mixed
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    public function processResponse(): mixed
+    public function processResponse(): array
     {
-
         // We have a merged packet, try to split it back up
         if (count($this->packets_response) === 1) {
             // Temp buffer to make string manipulation easier
             $buffer = new Buffer($this->packets_response[0]);
 
             // Grab the header and set the packet we need to split with
-            $packet = (($buffer->lookAhead(4) === $this->packets[self::PACKET_PLAYERS]) ?
-                self::PACKET_STATUS : self::PACKET_PLAYERS);
+            $packet = (($buffer->lookAhead(4) === $this->packets[self::PACKET_PLAYERS])
+                ? self::PACKET_STATUS : self::PACKET_PLAYERS);
 
             // Explode the merged packet as the response
-            $responses = explode(substr($this->packets[$packet], 2), $buffer->getData());
+            $separator = substr($this->packets[$packet], 2);
+
+            if ($separator === '') {
+                throw new ProtocolException('The CS2D packet separator is empty.');
+            }
+            $responses = explode($separator, $buffer->getData());
 
             // Try to rebuild the second packet to the same as if it was sent as two separate responses
             $responses[1] = $this->packets[$packet] . ((count($responses) === 2) ? $responses[1] : "");
@@ -125,50 +131,16 @@ class Cs2d extends Protocol
             $responses = $this->packets_response;
         }
 
-        // Will hold the packets after sorting
-        $packets = [];
-
-        // We need to pre-sort these for split packets so we can do extra work where needed
-        foreach ($responses as $response) {
-            $buffer = new Buffer($response);
-
-            // Pull out the header
-            $header = $buffer->read(4);
-
-            // Add the packet to the proper section, we will combine later
-            $packets[$header][] = $buffer->getBuffer();
-        }
-
-        unset($buffer);
-
-        $results = [];
-
-        // Now let's iterate and process
-        foreach ($packets as $header => $packetGroup) {
-            // Figure out which packet response this is
-            if (!array_key_exists($header, $this->responses)) {
-                throw new ProtocolException(__METHOD__ . " response type '" . bin2hex($header) . "' is not valid");
-            }
-
-            // Now we need to call the proper method
-            $results = array_merge(
-                $results,
-                call_user_func_array([$this, $this->responses[$header]], [new Buffer(implode($packetGroup))])
-            );
-        }
-
-        unset($packets);
-
-        return $results;
+        return $this->processGroupedResponses($responses, 4);
     }
 
     /**
      * Handles processing the details data into a usable format
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processDetails(Buffer $buffer)
+    protected function processDetails(Buffer $buffer): array
     {
         // Set the result to a new result instance
         $result = new Result();
@@ -177,12 +149,12 @@ class Cs2d extends Protocol
         $serverFlags = $buffer->readInt8();
 
         // Read server flags
-        $result->add('password', (int)$this->readFlag($serverFlags, 0));
-        $result->add('registered_only', (int)$this->readFlag($serverFlags, 1));
-        $result->add('fog_of_war', (int)$this->readFlag($serverFlags, 2));
-        $result->add('friendly_fire', (int)$this->readFlag($serverFlags, 3));
-        $result->add('bots_enabled', (int)$this->readFlag($serverFlags, 5));
-        $result->add('lua_scripts', (int)$this->readFlag($serverFlags, 6));
+        $result->add('password', (int) $this->readFlag($serverFlags, 0));
+        $result->add('registered_only', (int) $this->readFlag($serverFlags, 1));
+        $result->add('fog_of_war', (int) $this->readFlag($serverFlags, 2));
+        $result->add('friendly_fire', (int) $this->readFlag($serverFlags, 3));
+        $result->add('bots_enabled', (int) $this->readFlag($serverFlags, 5));
+        $result->add('lua_scripts', (int) $this->readFlag($serverFlags, 6));
 
         // Read the rest of the buffer data
         $result->add('servername', $this->convertToUtf8($buffer->readPascalString()));
@@ -199,12 +171,11 @@ class Cs2d extends Protocol
     /**
      * Handles processing the player data into a usable format
      *
-     * @return array
+     * @return array<string, mixed>
      * @throws ProtocolException
      */
-    protected function processPlayers(Buffer $buffer)
+    protected function processPlayers(Buffer $buffer): array
     {
-
         // Set the result to a new result instance
         $result = new Result();
 
@@ -232,13 +203,12 @@ class Cs2d extends Protocol
     /**
      * Read flags from stored value
      *
-     * @param $flags
-     * @param $offset
-     *
+     * @param int $flags
+     * @param int $offset
      * @return bool
      */
-    protected function readFlag($flags, $offset): bool
+    protected function readFlag(int $flags, int $offset): bool
     {
-        return (bool)($flags & (1 << $offset));
+        return (bool) ($flags & (1 << $offset));
     }
 }
