@@ -26,7 +26,7 @@ Composer is recommended:
 composer require softcreatr/gameq:^5.0
 ```
 
-GameQ requires PHP 8.1 or newer and the `bz2`, `curl`, `libxml`, `simplexml`, and `xml` extensions. See the [installation guide](https://github.com/SoftCreatRMedia/GameQ/wiki/Installation) for standalone loading and platform details.
+GameQ requires PHP 8.1 or newer and the `curl`, `libxml`, `simplexml`, and `xml` extensions. The optional `bz2` extension is only needed to decode compressed Source/A2S split responses. See the [installation guide](https://github.com/SoftCreatRMedia/GameQ/wiki/Installation) for standalone loading and platform details.
 
 ## Quick start
 

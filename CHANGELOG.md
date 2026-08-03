@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [5.0.1] - 2026-08-03
+
+### Changed
+
+- Made `ext-bz2` optional; it is only required when a Source/A2S server returns a bzip2-compressed split response.
+
 ## [5.0.0] - 2026-08-02
 
 ### Added
@@ -72,4 +78,5 @@ All notable changes to this project are documented in this file.
 - Version 5.0 includes deliberate public and protected API changes; consumers extending GameQ should review the 4.x migration guide.
 - PHP 8.1 or newer is now required.
 
+[5.0.1]: https://github.com/SoftCreatRMedia/GameQ/compare/5.0.0...5.0.1
 [5.0.0]: https://github.com/SoftCreatRMedia/GameQ/compare/4.0.0...5.0.0
