@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/SoftCreatRMedia/GameQ/actions/workflows/Tests.yml/badge.svg)](https://github.com/SoftCreatRMedia/GameQ/actions/workflows/Tests.yml)
 [![Latest Stable Version](https://img.shields.io/packagist/v/softcreatr/gameq.svg)](https://packagist.org/packages/softcreatr/gameq)
-[![Supported protocols](https://img.shields.io/badge/supported%20protocols-183-brightgreen)](https://github.com/SoftCreatRMedia/GameQ/wiki/Supported-Servers)
+[![Supported protocols](https://img.shields.io/badge/supported%20protocols-184-brightgreen)](https://github.com/SoftCreatRMedia/GameQ/wiki/Supported-Servers)
 [![PHP Version](https://img.shields.io/packagist/dependency-v/softcreatr/gameq/php.svg)](https://packagist.org/packages/softcreatr/gameq)
 [![License](https://img.shields.io/badge/license-LGPL--3.0--or--later-blue.svg)](LICENSE.lgpl)
 
@@ -12,7 +12,7 @@ This repository is the maintained [SoftCreatR Media fork](https://github.com/Sof
 
 ## Highlights
 
-- 183 game, voice-server, and generic protocol identifiers.
+- 184 game, voice-server, and generic protocol identifiers.
 - Concurrent mixed-protocol queries with configurable batch and response limits.
 - Normalized `gq_*` fields plus protocol-native data, players, teams, and join links.
 - Broad coverage through established families such as Source and GoldSource, GameSpy, Quake, Unreal, Doom 3, Frostbite, RakNet, and dedicated voice-server protocols.

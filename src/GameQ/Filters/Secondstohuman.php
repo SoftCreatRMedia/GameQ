@@ -88,7 +88,7 @@ class Secondstohuman extends Base
      *
      * @template TKey of array-key
      * @param array<TKey, mixed> $result
-     * @return array<TKey, mixed>
+     * @return array<TKey|string, mixed>
      */
     protected function iterate(array $result): array
     {

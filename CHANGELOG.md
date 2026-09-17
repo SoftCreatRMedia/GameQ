@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [5.1.3] - WIP
+
+### Added
+
+- Added stable WARDOGS support through the authenticated WDRCON HTTP API, including server status, players, faction scores, health, capabilities, and persistent server identifiers.
+
 ## [5.1.2] - 2026-08-18
 
 ### Fixed
@@ -110,7 +116,9 @@ All notable changes to this project are documented in this file.
 - Version 5.0 includes deliberate public and protected API changes; consumers extending GameQ should review the 4.x migration guide.
 - PHP 8.1 or newer is now required.
 
-[Unreleased]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.0...HEAD
+[Unreleased]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.3...HEAD
+[5.1.3]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.2...5.1.3
+[5.1.2]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.1...5.1.2
 [5.1.1]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.0...5.1.1
 [5.1.0]: https://github.com/SoftCreatRMedia/GameQ/compare/5.0.2...5.1.0
 [5.0.2]: https://github.com/SoftCreatRMedia/GameQ/compare/5.0.1...5.0.2

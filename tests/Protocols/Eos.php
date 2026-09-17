@@ -19,8 +19,16 @@
 
 namespace GameQ\Tests\Protocols;
 
+use GameQ\Exception\ProtocolException;
+use GameQ\Exception\ServerException;
+use GameQ\Server;
+
 class Eos extends Base
 {
+    /**
+     * @throws ServerException
+     * @throws ProtocolException
+     */
     public function testLiveResponsesDoNotRetainAuthenticationData(): void
     {
         $protocol = new class extends \GameQ\Protocols\Eos {
@@ -44,7 +52,7 @@ class Eos extends Base
                 return [['hostname' => 'EOS server']];
             }
         };
-        $server = new \GameQ\Server([
+        $server = new Server([
             'type' => 'eos',
             'host' => '127.0.0.1:7777',
         ]);
@@ -98,6 +106,9 @@ class Eos extends Base
      * Test to ensure the response processing is correct
      *
      * @return void
+     *
+     * @throws ServerException
+     * @throws \ReflectionException
      */
     public function testResponses(): void
     {
