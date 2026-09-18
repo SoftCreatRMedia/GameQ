@@ -7,6 +7,7 @@ All notable changes to this project are documented in this file.
 ### Added
 
 - Added stable WARDOGS support through the authenticated WDRCON HTTP API, including server status, players, faction scores, health, capabilities, and persistent server identifiers.
+- Added Dimraeth support for servers running WaygateServer 0.3.6 or newer, using its Source A2S query endpoint for status, players, password state, version, and mod rules.
 
 ## [5.1.2] - 2026-08-18
 
