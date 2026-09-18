@@ -21,7 +21,9 @@ namespace GameQ\Tests\Protocols;
 
 use GameQ\Exception\ServerException;
 use GameQ\Server;
+use JsonException;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionException;
 use RuntimeException;
 
 /**
@@ -32,7 +34,7 @@ class Dimraeth extends Base
     /**
      * @return list<array{list<string>, non-empty-array<string, array<string, mixed>>}>
      *
-     * @throws \JsonException
+     * @throws JsonException
      */
     public static function loadHexData(): array
     {
@@ -82,7 +84,7 @@ class Dimraeth extends Base
      * @param non-empty-array<string, array<string, mixed>> $result
      *
      * @throws ServerException
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     #[DataProvider('loadHexData')]
     public function testResponses(array $responses, array $result): void
@@ -107,8 +109,8 @@ class Dimraeth extends Base
     }
 
     /**
-     * @throws \ReflectionException
-     * @throws \JsonException
+     * @throws ReflectionException
+     * @throws JsonException
      * @throws ServerException
      */
     public function testExplicitQueryPortOverridesDerivedPort(): void

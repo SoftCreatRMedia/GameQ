@@ -19,6 +19,7 @@ namespace GameQ\Tests\Protocols;
 use GameQ\Exception\ProtocolException;
 use GameQ\Exception\ServerException;
 use GameQ\Protocol;
+use ReflectionException;
 
 /**
  * @author Sascha Greuel <sascha@softcreatr.de>
@@ -26,7 +27,7 @@ use GameQ\Protocol;
 class Srb2 extends Base
 {
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testCurrentServerInfoPacket(): void
@@ -67,7 +68,7 @@ class Srb2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testInvalidChecksumIsRejected(): void

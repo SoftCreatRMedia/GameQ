@@ -17,6 +17,7 @@
 namespace GameQ\Tests\Protocols;
 
 use GameQ\Exception\ServerException;
+use ReflectionException;
 
 /**
  * @author Sascha Greuel <sascha@softcreatr.de>
@@ -24,7 +25,7 @@ use GameQ\Exception\ServerException;
 class Vcmp extends Base
 {
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testInformationAndPlayerResponses(): void

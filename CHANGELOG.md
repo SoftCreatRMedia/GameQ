@@ -2,12 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
-## [5.1.3] - WIP
+## [5.1.3] - 2026-09-18
 
 ### Added
 
 - Added stable WARDOGS support through the authenticated WDRCON HTTP API, including server status, players, faction scores, health, capabilities, and persistent server identifiers.
 - Added Dimraeth support for servers running WaygateServer 0.3.6 or newer, using its Source A2S query endpoint for status, players, password state, version, and mod rules.
+- Added beta RuneScape: Dragonwilds support through its Epic Online Services dedicated-server directory, with exact address-and-port matching, stale-session rejection, and normalized world, map, player capacity, password state, and build data.
+
+### Changed
+
+- Hardened EOS HTTP requests with explicit TLS and hostname verification, redirect refusal, bounded timeouts, and an 8 MiB streaming response limit.
 
 ## [5.1.2] - 2026-08-18
 

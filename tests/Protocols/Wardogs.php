@@ -20,6 +20,7 @@ use GameQ\Exception\ProtocolException;
 use GameQ\Exception\QueryException;
 use GameQ\Exception\ServerException;
 use GameQ\GameQ;
+use ReflectionException;
 
 /**
  * @author Sascha Greuel <sascha@softcreatr.de>
@@ -130,7 +131,7 @@ class Wardogs extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testIncompleteStatusResponseIsOffline(): void
@@ -147,7 +148,7 @@ class Wardogs extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testQueryPortIsRequired(): void
@@ -165,7 +166,7 @@ class Wardogs extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testRconPasswordIsRequired(): void

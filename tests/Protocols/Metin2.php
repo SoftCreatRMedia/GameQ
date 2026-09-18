@@ -24,6 +24,7 @@ use GameQ\Exception\ServerException;
 use GameQ\Protocol;
 use GameQ\Protocols\Metin2 as Metin2Protocol;
 use GameQ\Server;
+use ReflectionException;
 
 /**
  * Metin2 protocol tests.
@@ -33,7 +34,7 @@ use GameQ\Server;
 class Metin2 extends Base
 {
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ProtocolException
      * @throws ServerException
      */
@@ -74,7 +75,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testLiveCanonicalChannelStatusResponse(): void
@@ -98,7 +99,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testKnownExtendedChannelStatusResponse(): void
@@ -123,7 +124,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      * @throws ProtocolException
      */
@@ -164,7 +165,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testLiveAdminPageUserCountResponse(): void
@@ -194,7 +195,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testLiveMixedEmpireUserCountResponse(): void
@@ -221,7 +222,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testZeroChannelResponse(): void
@@ -236,7 +237,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testMalformedChannelStatusIsRejected(): void
@@ -252,7 +253,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testTruncatedExtendedChannelStatusIsRejected(): void
@@ -268,7 +269,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testRejectedAdminPageQueryIsRejected(): void
@@ -285,7 +286,7 @@ class Metin2 extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testAdminPageReportsClosedServer(): void

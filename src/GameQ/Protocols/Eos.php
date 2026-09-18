@@ -33,6 +33,8 @@ use JsonException;
  */
 class Eos extends Http
 {
+    protected const MAX_RESPONSE_BYTES = 8 * 1024 * 1024;
+
     /**
      * The protocol being used
      *
@@ -347,24 +349,70 @@ class Eos extends Http
             return null;
         }
 
-        $timeout = max(1, $this->normalizeInteger($this->options['http_timeout'] ?? 5, 5));
-        curl_setopt_array($ch, [
+        $timeout = $this->httpTimeout();
+        $response = '';
+        curl_setopt_array($ch, $this->httpSecurityOptions() + [
             CURLOPT_URL => $url,
             CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_RETURNTRANSFER => false,
             CURLOPT_ENCODING => '',
             CURLOPT_CONNECTTIMEOUT => $timeout,
             CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
-            CURLOPT_MAXFILESIZE => 8 * 1024 * 1024,
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_POSTFIELDS => $postFields,
+            CURLOPT_WRITEFUNCTION => function ($handle, string $chunk) use (&$response): int {
+                return $this->appendResponseChunk($response, $chunk);
+            },
         ]);
 
-        $response = curl_exec($ch);
-        $statusCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        try {
+            $success = curl_exec($ch);
+            $statusCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
 
-        if (!is_string($response) || $statusCode < 200 || $statusCode >= 300) {
+            return $this->decodeHttpResponse($success === true, $statusCode, $response);
+        } finally {
+            unset($ch);
+        }
+    }
+
+    /**
+     * @return array<int, bool|int>
+     */
+    protected function httpSecurityOptions(): array
+    {
+        return [
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_MAXFILESIZE => self::MAX_RESPONSE_BYTES,
+        ];
+    }
+
+    protected function httpTimeout(): int
+    {
+        return min(30, max(1, $this->normalizeInteger($this->options['http_timeout'] ?? 5, 5)));
+    }
+
+    protected function appendResponseChunk(string &$response, string $chunk): int
+    {
+        if (strlen($response) + strlen($chunk) > self::MAX_RESPONSE_BYTES) {
+            return 0;
+        }
+
+        $response .= $chunk;
+
+        return strlen($chunk);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function decodeHttpResponse(bool $success, int $statusCode, string $response): ?array
+    {
+        if (!$success || $statusCode < 200 || $statusCode >= 300) {
             return null;
         }
 

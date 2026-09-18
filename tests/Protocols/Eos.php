@@ -22,6 +22,7 @@ namespace GameQ\Tests\Protocols;
 use GameQ\Exception\ProtocolException;
 use GameQ\Exception\ServerException;
 use GameQ\Server;
+use ReflectionException;
 
 class Eos extends Base
 {
@@ -108,7 +109,7 @@ class Eos extends Base
      * @return void
      *
      * @throws ServerException
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function testResponses(): void
     {

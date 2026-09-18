@@ -17,6 +17,8 @@
 namespace GameQ\Tests\Protocols;
 
 use GameQ\Exception\ServerException;
+use JsonException;
+use ReflectionException;
 
 /**
  * @author Sascha Greuel <sascha@softcreatr.de>
@@ -24,8 +26,8 @@ use GameQ\Exception\ServerException;
 class Kspdmp extends Base
 {
     /**
-     * @throws \ReflectionException
-     * @throws \JsonException
+     * @throws ReflectionException
+     * @throws JsonException
      * @throws ServerException
      */
     public function testOfficialHttpStatusDocument(): void

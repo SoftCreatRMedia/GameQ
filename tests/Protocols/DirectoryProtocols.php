@@ -17,6 +17,7 @@
 namespace GameQ\Tests\Protocols;
 
 use GameQ\Exception\ServerException;
+use ReflectionException;
 
 /**
  * @author Sascha Greuel <sascha@softcreatr.de>
@@ -24,7 +25,7 @@ use GameQ\Exception\ServerException;
 class DirectoryProtocols extends Base
 {
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testLuantiOfficialDirectory(): void
@@ -52,7 +53,7 @@ class DirectoryProtocols extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testVintageStoryOfficialDirectory(): void
@@ -78,7 +79,7 @@ class DirectoryProtocols extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testRenegadeXOfficialDirectory(): void
@@ -109,7 +110,7 @@ class DirectoryProtocols extends Base
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testOpenRct2OfficialDirectory(): void

@@ -25,6 +25,7 @@ use GameQ\Protocol;
 use GameQ\Server;
 use PHPUnit\Framework\Attributes\Before;
 use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionException;
 
 class Samp extends Base
 {
@@ -104,7 +105,7 @@ class Samp extends Base
      * Test the packer header check application
      *
      * @throws ServerException
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function testPacketHeader(): void
     {
@@ -125,7 +126,7 @@ class Samp extends Base
      * Test for mis matched server code in response
      *
      * @throws ServerException
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function testServerCode(): void
     {
@@ -144,7 +145,7 @@ class Samp extends Base
     /**
      * Test for invalid packet type in response
      *
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws ServerException
      */
     public function testInvalidPacketTypeDebug(): void
@@ -169,7 +170,7 @@ class Samp extends Base
      * @param non-empty-array<string, array<string, mixed>> $result
      *
      * @throws ServerException
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     #[DataProvider('loadData')]
     public function testResponses(array $responses, array $result): void

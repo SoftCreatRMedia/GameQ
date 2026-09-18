@@ -103,6 +103,7 @@ class Metin2 extends Protocol
         }
 
         $this->adminPageQuery = $adminPageQuery;
+
         if ($adminPageQuery) {
             $this->packets = [
                 self::PACKET_STATUS => self::ADMIN_PAGE_SERVER_UP_REQUEST,
