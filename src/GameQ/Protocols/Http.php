@@ -20,7 +20,9 @@
 namespace GameQ\Protocols;
 
 use GameQ\Exception\ProtocolException;
+use GameQ\Http\Request;
 use GameQ\Protocol;
+use GameQ\Server;
 
 /**
  * Class Http
@@ -32,6 +34,59 @@ use GameQ\Protocol;
  */
 abstract class Http extends Protocol
 {
+    /** Send legacy HTTP packet templates through the configured HTTP transport.
+     *
+     * @throws ProtocolException
+     */
+    public function queryHttp(Server $server, int $timeout): void
+    {
+        $responses = [];
+        $scheme = in_array($this->transport, [self::TRANSPORT_SSL, self::TRANSPORT_TLS], true) ? 'https' : 'http';
+        $address = trim($server->ip(), '[]');
+        $host = str_contains($address, ':') ? "[$address]" : $address;
+
+        foreach ($this->packets as $type => $packet) {
+            if ($type === self::PACKET_CHALLENGE || $packet === '') {
+                continue;
+            }
+
+            [$head, $body] = array_pad(explode("\r\n\r\n", $packet, 2), 2, '');
+            $lines = explode("\r\n", $head);
+            $requestLine = array_shift($lines);
+
+            if (preg_match('/\A(GET|POST|HEAD) (\/\S*) HTTP\/1\.[01]\z/', $requestLine, $matches) !== 1) {
+                throw new ProtocolException('Invalid HTTP query packet.');
+            }
+
+            $headers = [];
+
+            foreach ($lines as $line) {
+                if (str_contains($line, ':')) {
+                    [$name, $value] = explode(':', $line, 2);
+                    $headers[trim($name)] = trim($value);
+                }
+            }
+
+            $response = $this->sendHttpRequest(new Request(
+                $matches[1],
+                "$scheme://$host:{$server->portQuery()}$matches[2]",
+                $headers,
+                $body,
+                max(1, $this->normalizeInteger($this->options['http_timeout'] ?? $timeout, $timeout)),
+                16 * 1024 * 1024,
+            ));
+
+            if ($response !== null && $response->statusCode >= 200 && $response->statusCode < 300) {
+                $responses[] = $response->toPacket();
+            }
+        }
+
+        // API protocols with no packets manage their own response state in beforeSend().
+        if ($this->packets !== []) {
+            $this->packetResponse($responses);
+        }
+    }
+
     /**
      * The query protocol used to make the call
      */

@@ -122,6 +122,7 @@ class Cfx extends Protocol
 
         try {
             $gameQ = new GameQ();
+            $gameQ->setHttpClient($this->getHttpClient());
             $gameQ->addServers([
                 [
                     Server::SERVER_ID => 'players',

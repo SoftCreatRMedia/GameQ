@@ -24,7 +24,7 @@ This repository is the maintained [SoftCreatR Media fork](https://github.com/Sof
 Composer is recommended:
 
 ```sh
-composer require softcreatr/gameq:^5.1
+composer require softcreatr/gameq:^5.2
 ```
 
 GameQ requires PHP 8.1 or newer and the `curl`, `libxml`, `simplexml`, and `xml` extensions. The optional `bz2` extension is only needed to decode compressed Source/A2S split responses. See the [installation guide](https://github.com/SoftCreatRMedia/GameQ/wiki/Installation) for standalone loading and platform details.
@@ -69,6 +69,53 @@ if ($results['source-server']['gq_online']) {
 ```
 
 The port in `host` is always the client/connect port. GameQ calculates the query port where a protocol has a known offset; use the per-server `query_port` option when the server uses a custom query port.
+
+## Custom HTTP clients (5.2+)
+
+All HTTP requests, including EOS/Dragonwilds, WARDOGS, official directories,
+authenticated APIs, and legacy HTTP packet protocols, use the configured transport.
+UDP and non-HTTP TCP queries continue to use GameQ's query transport.
+
+The default `GameQ\Http\CurlClient` works without additional dependencies.
+Use any PSR-18 client with PSR-17 request and stream factories through the optional
+`GameQ\Http\Psr18Client` adapter. Configure its proxy, TLS verification, redirect
+refusal, and timeout on the underlying client: PSR-18 has no per-request options.
+The adapter bounds response reads, but an underlying client may buffer the response
+before returning it.
+
+For Guzzle, the optional `GameQ\Http\GuzzleClient` adapter applies each protocol's
+timeout and decoded response size limit during transfer, verifies TLS, and refuses
+redirects. Install Guzzle separately (`composer require guzzlehttp/guzzle:^7.9`):
+
+```php
+use GameQ\GameQ;
+use GameQ\Http\GuzzleClient;
+use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\HttpFactory;
+
+$factory = new HttpFactory();
+$gameQ = (new GameQ())->setHttpClient(new GuzzleClient(
+    new Client(['proxy' => 'http://proxy.example:8080']),
+    $factory,
+    $factory,
+));
+```
+
+For another PSR-18 implementation, replace `GuzzleClient` with `Psr18Client` and
+provide your client and factories. For transports without PSR support, implement
+`GameQ\Http\ClientInterface::send(Request $request): Response`. Honor the request's
+timeout and size limit, verify TLS, refuse redirects, and throw `HttpException` for
+transfer failures. HTTP error statuses are returned as responses; protocols decide
+whether they mean offline. Windrose login cookies are scoped to the current server
+and query, and directory caches are scoped to the configured transport.
+
+`setHttpClient()` updates existing servers and servers added later. Independently
+created `Server`/`Protocol` instances can use `protocolInstance()->setHttpClient()`.
+The standalone autoloader remains supported without installing PSR or Guzzle packages
+when using the default cURL transport.
+
+In WoltLab Suite, use `new wcf\system\gameq\ScGameQ()` from the developer package.
+It injects a client from the Suite's `HttpFactory` and honors `PROXY_SERVER_HTTP`.
 
 ## Documentation
 

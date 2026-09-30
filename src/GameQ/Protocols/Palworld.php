@@ -19,6 +19,7 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Http\Request;
 use GameQ\Result;
 use GameQ\Server;
 use JsonException;
@@ -143,33 +144,20 @@ class Palworld extends Http
      */
     private function request(string $url, string $username, string $password): ?array
     {
-        $handle = curl_init($url);
-
-        if ($handle === false) {
-            return null;
-        }
-
         $timeout = max(1, $this->normalizeInteger($this->options['http_timeout'] ?? 5, 5));
-        curl_setopt_array($handle, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => $timeout,
-            CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_PROTOCOLS => CURLPROTO_HTTP,
-            CURLOPT_MAXFILESIZE => 8 * 1024 * 1024,
-            CURLOPT_HTTPAUTH => CURLAUTH_BASIC,
-            CURLOPT_USERPWD => $username . ':' . $password,
-            CURLOPT_HTTPHEADER => ['Accept: application/json'],
-        ]);
+        $response = $this->sendHttpRequest(new Request(
+            'GET',
+            $url,
+            ['Accept' => 'application/json', 'Authorization' => 'Basic ' . base64_encode($username . ':' . $password)],
+            timeout: $timeout,
+        ));
 
-        $response = curl_exec($handle);
-        $statusCode = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-
-        if (!is_string($response) || $statusCode !== 200) {
+        if ($response === null || $response->statusCode !== 200) {
             return null;
         }
 
         try {
-            return $this->normalizeStringKeyedArray(json_decode($response, true, 512, JSON_THROW_ON_ERROR));
+            return $this->normalizeStringKeyedArray(json_decode($response->body, true, 512, JSON_THROW_ON_ERROR));
         } catch (JsonException) {
             return null;
         }

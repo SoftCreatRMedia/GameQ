@@ -16,9 +16,12 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Http\ClientInterface;
+use GameQ\Http\Request;
 use GameQ\Protocol;
 use GameQ\Server;
 use JsonException;
+use WeakMap;
 
 /**
  * Shared implementation for official HTTPS game-server directories.
@@ -29,8 +32,8 @@ abstract class OfficialDirectory extends Protocol
 {
     protected string $transport = self::TRANSPORT_TCP;
 
-    /** @var array<string, array{expires: int, response: mixed}> */
-    private static array $directoryResponses = [];
+    /** @var WeakMap<ClientInterface, array<string, array{expires: int, response: mixed}>>|null */
+    private static ?WeakMap $directoryResponses = null;
 
     /** @var array<string, mixed>|null */
     protected ?array $serverData = null;
@@ -54,53 +57,41 @@ abstract class OfficialDirectory extends Protocol
         $url = $this->directoryUrl();
         $cacheTtl = max(0, $this->normalizeInteger($this->options['directory_cache_ttl'] ?? 30, 30));
 
-        $cachedResponse = self::$directoryResponses[$url] ?? null;
+        $client = $this->getHttpClient();
+        self::$directoryResponses ??= new WeakMap();
+        $cache = self::$directoryResponses[$client] ?? [];
+        $cachedResponse = $cache[$url] ?? null;
 
         if ($cacheTtl > 0 && $cachedResponse !== null && $cachedResponse['expires'] >= time()) {
             return $cachedResponse['response'];
         }
 
-        $handle = curl_init($url);
-
-        if ($handle === false) {
+        if (!str_starts_with($url, 'https://')) {
             return null;
         }
 
         $timeout = max(1, $this->normalizeInteger($this->options['http_timeout'] ?? 5, 5));
-        $maximumLength = 16 * 1024 * 1024;
-        $response = '';
-        curl_setopt_array($handle, [
-            CURLOPT_CONNECTTIMEOUT => $timeout,
-            CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
-            CURLOPT_MAXFILESIZE => $maximumLength,
-            CURLOPT_HTTPHEADER => ['Accept: application/json'],
-            CURLOPT_USERAGENT => 'GameQ',
-            CURLOPT_WRITEFUNCTION => static function ($handle, string $chunk) use (&$response, $maximumLength): int {
-                if (strlen($response) + strlen($chunk) > $maximumLength) {
-                    return 0;
-                }
+        $response = $this->sendHttpRequest(new Request(
+            'GET',
+            $url,
+            ['Accept' => 'application/json'],
+            timeout: $timeout,
+            maxResponseBytes: 16 * 1024 * 1024,
+        ));
 
-                $response .= $chunk;
-
-                return strlen($chunk);
-            },
-        ]);
-        $success = curl_exec($handle);
-        $status = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-
-        if ($success !== true || $status !== 200) {
+        if ($response === null || $response->statusCode !== 200) {
             return null;
         }
 
         try {
-            $decoded = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+            $decoded = json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
 
             if ($cacheTtl > 0) {
-                self::$directoryResponses[$url] = [
+                $cache[$url] = [
                     'expires' => time() + $cacheTtl,
                     'response' => $decoded,
                 ];
+                self::$directoryResponses[$client] = $cache;
             }
 
             return $decoded;

@@ -1,8 +1,8 @@
 {
   "name": "softcreatr/gameq",
-  "type": "library",
   "description": "A maintained PHP game-server status query library based on GameQ by Austinb",
   "license": "LGPL-3.0-or-later",
+  "type": "library",
   "keywords": [
     "gameq",
     "game server",
@@ -74,11 +74,10 @@
     "ext-simplexml": "*",
     "ext-xml": "*"
   },
-  "suggest": {
-    "ext-bz2": "Required to decode compressed Source/A2S split responses."
-  },
   "require-dev": {
+    "ext-zlib": "*",
     "corneltek/getoptionkit": "^2.7",
+    "guzzlehttp/guzzle": "^7.9 || ^8.0",
     "php-parallel-lint/php-parallel-lint": "^1.4",
     "phpstan/extension-installer": "^1.4",
     "phpstan/phpstan": "^2.2",
@@ -88,6 +87,12 @@
     "phpunit/phpunit": "^10.5 || ^11.5 || ^12.5 || ^13.1",
     "roave/backward-compatibility-check": "^8.1",
     "squizlabs/php_codesniffer": "^4.0"
+  },
+  "suggest": {
+    "ext-bz2": "Required to decode compressed Source/A2S split responses.",
+    "guzzlehttp/guzzle": "Use the optional Guzzle HTTP transport adapter.",
+    "psr/http-client": "Use the optional PSR-18 HTTP transport adapter.",
+    "psr/http-factory": "Provide PSR-17 request and stream factories for custom HTTP clients."
   },
   "autoload": {
     "psr-4": {

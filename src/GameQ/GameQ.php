@@ -23,6 +23,9 @@ use GameQ\Exception\ProtocolException;
 use GameQ\Exception\QueryException;
 use GameQ\Exception\ServerException;
 use GameQ\Filters\Base;
+use GameQ\Http\ClientInterface;
+use GameQ\Http\CurlClient;
+use GameQ\Protocols\Http;
 use GameQ\Query\Core;
 use GameQ\Query\Native;
 use InvalidArgumentException;
@@ -49,6 +52,25 @@ use LogicException;
  */
 class GameQ
 {
+    private ?ClientInterface $httpClient = null;
+
+    public function getHttpClient(): ClientInterface
+    {
+        return $this->httpClient ??= new CurlClient();
+    }
+
+    /** Applies to both existing servers and servers added later. */
+    public function setHttpClient(ClientInterface $client): self
+    {
+        $this->httpClient = $client;
+
+        foreach ($this->servers as $server) {
+            $server->protocolInstance()->setHttpClient($client);
+        }
+
+        return $this;
+    }
+
     /**
      * Holds the instance of itself
      *
@@ -172,7 +194,9 @@ class GameQ
     public function addServer(array $server_info = []): self
     {
         // Add and validate the server
-        $this->servers[uniqid('', true)] = new Server($server_info);
+        $server = new Server($server_info);
+        $server->protocolInstance()->setHttpClient($this->getHttpClient());
+        $this->servers[uniqid('', true)] = $server;
 
         return $this;
     }
@@ -523,6 +547,12 @@ class GameQ
 
             // Invoke the beforeSend method
             $server->protocolInstance()->beforeSend($server);
+
+            if ($server->protocolInstance() instanceof Http) {
+                $server->protocolInstance()->queryHttp($server, $this->getIntegerOption('timeout', 3));
+
+                continue;
+            }
 
             // Get all the non-challenge packets we need to send
             $packets = $server->protocolInstance()->getPacket('!' . Protocol::PACKET_CHALLENGE);

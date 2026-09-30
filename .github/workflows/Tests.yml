@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     continue-on-error: ${{ matrix.experimental }}
     strategy:
@@ -24,16 +24,18 @@ jobs:
         php: [8.1, 8.2, 8.3, 8.4, 8.5]
         experimental: [false]
         composer-extra: ['']
+        phpunit-extra: ['']
         include:
           - php: 8.6
             experimental: true
             composer-extra: '--ignore-platform-req=php+'
+            phpunit-extra: '--do-not-fail-on-deprecation --display-deprecations'
     env:
       PHP_VERSION: ${{ matrix.php }}
     name: PHP ${{ matrix.php }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 10
 
@@ -42,14 +44,14 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-          extensions: bcmath,bz2,curl,intl,mbstring,xml
+          extensions: bcmath,bz2,curl,intl,mbstring,xml,zlib
           tools: composer:v2
 
       - name: Validate composer.json
         run: composer validate --strict
 
       - name: Cache composer files
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.composer/cache/files
           key: dependencies-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
@@ -61,14 +63,23 @@ jobs:
         run: composer lint
 
       - name: Run PHPUnit
-        run: composer phpunit
+        run: composer phpunit -- ${{ matrix.phpunit-extra }}
+
+      - name: Report experimental PHP failure diagnostics
+        if: ${{ failure() && matrix.experimental }}
+        continue-on-error: true
+        run: |
+          php --version
+          php --ini
+          php --modules
+          composer --version
 
   quality:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -77,7 +88,7 @@ jobs:
         with:
           php-version: '8.5'
           coverage: none
-          extensions: bcmath,bz2,curl,intl,mbstring,xml
+          extensions: bcmath,bz2,curl,intl,mbstring,xml,zlib
           tools: composer:v2
 
       - name: Install dependencies

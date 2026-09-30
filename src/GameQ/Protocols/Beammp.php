@@ -19,10 +19,13 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Http\ClientInterface;
+use GameQ\Http\Request;
 use GameQ\Protocol;
 use GameQ\Result;
 use GameQ\Server;
 use JsonException;
+use WeakMap;
 
 /**
  * BeamMP server-list protocol.
@@ -58,8 +61,8 @@ class Beammp extends Protocol
         ],
     ];
 
-    /** @var list<array<string, mixed>>|null */
-    private static ?array $backendResult = null;
+    /** @var WeakMap<ClientInterface, list<array<string, mixed>>>|null */
+    private static ?WeakMap $backendResults = null;
 
     /** @var array<string, mixed>|null */
     private ?array $serverData = null;
@@ -117,36 +120,27 @@ class Beammp extends Protocol
      */
     private function loadBackend(): array
     {
-        if (self::$backendResult !== null) {
-            return self::$backendResult;
-        }
+        $client = $this->getHttpClient();
+        self::$backendResults ??= new WeakMap();
 
-        $handle = curl_init(self::BACKEND_URL);
-
-        if ($handle === false) {
-            return self::$backendResult = [];
+        if (isset(self::$backendResults[$client])) {
+            return self::$backendResults[$client];
         }
 
         $timeout = max(1, $this->normalizeInteger($this->options['http_timeout'] ?? 5, 5));
-        curl_setopt_array($handle, [
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => $timeout,
-            CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
-            CURLOPT_MAXFILESIZE => 8 * 1024 * 1024,
-            CURLOPT_HTTPHEADER => ['Accept: application/json'],
-        ]);
+        $response = $this->sendHttpRequest(new Request(
+            'POST',
+            self::BACKEND_URL,
+            ['Accept' => 'application/json'],
+            timeout: $timeout,
+        ));
 
-        $response = curl_exec($handle);
-        $statusCode = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-
-        if (!is_string($response) || $statusCode !== 200) {
+        if ($response === null || $response->statusCode !== 200) {
             return [];
         }
 
         try {
-            $decoded = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+            $decoded = json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return [];
         }
@@ -154,7 +148,7 @@ class Beammp extends Protocol
         $servers = $this->normalizeServerList($decoded);
 
         if ($servers !== []) {
-            self::$backendResult = $servers;
+            self::$backendResults[$client] = $servers;
         }
 
         return $servers;

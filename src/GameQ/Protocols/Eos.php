@@ -20,6 +20,7 @@
 namespace GameQ\Protocols;
 
 use GameQ\Exception\ProtocolException;
+use GameQ\Http\Request;
 use GameQ\Server;
 use JsonException;
 
@@ -343,39 +344,33 @@ class Eos extends Http
             return null;
         }
 
-        $ch = curl_init();
-
-        if ($ch === false) {
+        if (!str_starts_with($url, 'https://')) {
             return null;
         }
 
-        $timeout = $this->httpTimeout();
-        $response = '';
-        curl_setopt_array($ch, $this->httpSecurityOptions() + [
-            CURLOPT_URL => $url,
-            CURLOPT_POST => true,
-            CURLOPT_RETURNTRANSFER => false,
-            CURLOPT_ENCODING => '',
-            CURLOPT_CONNECTTIMEOUT => $timeout,
-            CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_POSTFIELDS => $postFields,
-            CURLOPT_WRITEFUNCTION => function ($handle, string $chunk) use (&$response): int {
-                return $this->appendResponseChunk($response, $chunk);
-            },
-        ]);
+        $requestHeaders = [];
 
-        try {
-            $success = curl_exec($ch);
-            $statusCode = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-
-            return $this->decodeHttpResponse($success === true, $statusCode, $response);
-        } finally {
-            unset($ch);
+        foreach ($headers as $header) {
+            [$name, $value] = explode(':', $header, 2);
+            $requestHeaders[$name] = trim($value);
         }
+
+        $response = $this->sendHttpRequest(new Request(
+            'POST',
+            $url,
+            $requestHeaders,
+            $postFields,
+            $this->httpTimeout(),
+            self::MAX_RESPONSE_BYTES,
+        ));
+
+        return $response === null ? null : $this->decodeHttpResponse(true, $response->statusCode, $response->body);
     }
 
     /**
+     * Retained for subclasses from GameQ 5.1. Transport policy is now enforced
+     * by the configured HTTP client rather than per-protocol cURL options.
+     *
      * @return array<int, bool|int>
      */
     protected function httpSecurityOptions(): array
@@ -396,6 +391,7 @@ class Eos extends Http
         return min(30, max(1, $this->normalizeInteger($this->options['http_timeout'] ?? 5, 5)));
     }
 
+    /** Retained for subclasses; configured HTTP transports enforce response limits. */
     protected function appendResponseChunk(string &$response, string $chunk): int
     {
         if (strlen($response) + strlen($chunk) > self::MAX_RESPONSE_BYTES) {

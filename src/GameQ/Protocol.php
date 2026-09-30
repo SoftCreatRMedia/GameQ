@@ -22,6 +22,11 @@
 namespace GameQ;
 
 use GameQ\Exception\ProtocolException;
+use GameQ\Http\ClientInterface;
+use GameQ\Http\CurlClient;
+use GameQ\Http\HttpException;
+use GameQ\Http\Request;
+use GameQ\Http\Response;
 use ReflectionException;
 use ReflectionMethod;
 
@@ -32,6 +37,34 @@ use ReflectionMethod;
  */
 abstract class Protocol
 {
+    private ?ClientInterface $httpClient = null;
+
+    private static ?ClientInterface $defaultHttpClient = null;
+
+    public function setHttpClient(ClientInterface $client): self
+    {
+        $this->httpClient = $client;
+
+        return $this;
+    }
+
+    public function getHttpClient(): ClientInterface
+    {
+        return $this->httpClient ?? (self::$defaultHttpClient ??= new CurlClient());
+    }
+
+    /** Network failures retain the existing offline-result behavior. */
+    protected function sendHttpRequest(Request $request): ?Response
+    {
+        try {
+            $response = $this->getHttpClient()->send($request);
+
+            return strlen($response->body) <= $request->maxResponseBytes ? $response : null;
+        } catch (HttpException) {
+            return null;
+        }
+    }
+
     /**
      * Constants for class states
      */
@@ -101,7 +134,7 @@ abstract class Protocol
      *
      * @var array<string, string>
      */
-    private array $packet_templates = [];
+    private array $packet_templates;
 
     /**
      * Holds the response headers and the method to use to process them.
@@ -313,7 +346,7 @@ abstract class Protocol
         } elseif ($type === '!challenge') {
             // Loop the packets
             foreach ($this->packets as $packet_type => $packet_data) {
-                // Dont want challenge packets
+                // Don't want challenge packets
                 if ($packet_type !== self::PACKET_CHALLENGE) {
                     $packets[$packet_type] = $packet_data;
                 }
@@ -379,7 +412,7 @@ abstract class Protocol
      */
 
     /**
-     * Determine whether or not this protocol has a challenge needed before querying
+     * Determine whether this protocol has a challenge needed before querying
      */
     public function hasChallenge(): bool
     {

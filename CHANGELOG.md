@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## [5.2.0] - 2026-09-30
+
+### Added
+
+- Injectable HTTP transports with a dependency-free cURL default and optional PSR-18/PSR-17 and Guzzle adapters.
+- `GameQ::setHttpClient()` and protocol-level injection for custom clients, proxy configuration, and offline testing.
+
+### Changed
+
+- Routed every HTTP request through the configured transport, including legacy TCP-based HTTP queries, EOS/Dragonwilds, WARDOGS, Palworld, Windrose, Factorio, BeamMP, and official server directories.
+- Centralized TLS verification, redirect refusal, timeouts, and decoded response limits in the default and Guzzle transports.
+- Scoped directory caches to the HTTP transport and kept Windrose login cookies local to each server query.
+
 ## [5.1.3] - 2026-09-18
 
 ### Added
@@ -122,7 +135,8 @@ All notable changes to this project are documented in this file.
 - Version 5.0 includes deliberate public and protected API changes; consumers extending GameQ should review the 4.x migration guide.
 - PHP 8.1 or newer is now required.
 
-[Unreleased]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.3...HEAD
+[Unreleased]: https://github.com/SoftCreatRMedia/GameQ/compare/5.2.0...HEAD
+[5.2.0]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.3...5.2.0
 [5.1.3]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.2...5.1.3
 [5.1.2]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.1...5.1.2
 [5.1.1]: https://github.com/SoftCreatRMedia/GameQ/compare/5.1.0...5.1.1

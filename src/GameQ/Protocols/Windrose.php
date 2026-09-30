@@ -16,6 +16,8 @@
 
 namespace GameQ\Protocols;
 
+use GameQ\Http\Request;
+use GameQ\Http\Response;
 use GameQ\Protocol;
 use GameQ\Result;
 use GameQ\Server;
@@ -167,68 +169,81 @@ class Windrose extends Protocol
         $host = str_contains($address, ':') ? '[' . $address . ']' : $address;
         $baseUrl = "http://$host:{$server->portQuery()}";
         $timeout = max(1, $this->normalizeInteger($this->options['http_timeout'] ?? 5, 5));
-        $handle = curl_init($baseUrl . '/login');
+        $login = $this->sendHttpRequest(new Request(
+            'POST',
+            $baseUrl . '/login',
+            ['Accept' => 'text/html', 'Content-Type' => 'application/x-www-form-urlencoded'],
+            http_build_query(['password' => $password]),
+            $timeout,
+            self::MAX_RESPONSE_BYTES,
+        ));
 
-        if ($handle === false) {
+        if ($login === null || $login->statusCode !== 302) {
+            return null;
+        }
+
+        $cookies = $this->statusCookies($login, strtolower($address));
+
+        if ($cookies === '') {
+            return null;
+        }
+
+        $response = $this->sendHttpRequest(new Request(
+            'GET',
+            $baseUrl . '/api/status',
+            ['Accept' => 'application/json', 'Cookie' => $cookies],
+            timeout: $timeout,
+            maxResponseBytes: self::MAX_RESPONSE_BYTES,
+        ));
+
+        if ($response === null || $response->statusCode !== 200) {
             return null;
         }
 
         try {
-            curl_setopt_array($handle, [
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => http_build_query(['password' => $password]),
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_CONNECTTIMEOUT => $timeout,
-                CURLOPT_TIMEOUT => $timeout,
-                CURLOPT_PROTOCOLS => CURLPROTO_HTTP,
-                CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP,
-                CURLOPT_FOLLOWLOCATION => false,
-                CURLOPT_COOKIEFILE => '',
-                CURLOPT_HTTPHEADER => ['Accept: text/html'],
-            ]);
-
-            $loginResponse = curl_exec($handle);
-            $loginStatus = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-            $cookies = curl_getinfo($handle, CURLINFO_COOKIELIST);
-
-            if (!is_string($loginResponse) || $loginStatus !== 302 || $cookies === []) {
-                return null;
-            }
-
-            $response = '';
-            curl_setopt_array($handle, [
-                CURLOPT_URL => $baseUrl . '/api/status',
-                CURLOPT_POST => false,
-                CURLOPT_HTTPGET => true,
-                CURLOPT_POSTFIELDS => null,
-                CURLOPT_MAXFILESIZE => self::MAX_RESPONSE_BYTES,
-                CURLOPT_HTTPHEADER => ['Accept: application/json'],
-                CURLOPT_WRITEFUNCTION => static function ($curl, string $chunk) use (&$response): int {
-                    if (strlen($response) + strlen($chunk) > self::MAX_RESPONSE_BYTES) {
-                        return 0;
-                    }
-
-                    $response .= $chunk;
-
-                    return strlen($chunk);
-                },
-            ]);
-
-            $success = curl_exec($handle);
-            $statusCode = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-
-            if ($success === false || $statusCode !== 200) {
-                return null;
-            }
-
-            try {
-                return $this->normalizeStringKeyedArray(json_decode($response, true, 512, JSON_THROW_ON_ERROR));
-            } catch (JsonException) {
-                return null;
-            }
-        } finally {
-            unset($handle);
+            return $this->normalizeStringKeyedArray(json_decode($response->body, true, 512, JSON_THROW_ON_ERROR));
+        } catch (JsonException) {
+            return null;
         }
+    }
+
+    /** Keep login cookies local to this server and this query. */
+    private function statusCookies(Response $response, string $host): string
+    {
+        $cookies = [];
+
+        foreach ($response->header('Set-Cookie') as $header) {
+            $parts = array_map('trim', explode(';', $header));
+            $pair = array_shift($parts);
+
+            if (preg_match('/\A([^=\s,;]+)=([^\r\n;]*)\z/', $pair, $matches) !== 1) {
+                continue;
+            }
+
+            $attributes = [];
+
+            foreach ($parts as $part) {
+                [$key, $value] = array_pad(explode('=', $part, 2), 2, '');
+                $attributes[strtolower($key)] = $value;
+            }
+
+            $domain = strtolower(ltrim($attributes['domain'] ?? $host, '.'));
+            $path = $attributes['path'] ?? '/';
+            $expires = isset($attributes['expires']) ? strtotime($attributes['expires']) : false;
+
+            if (
+                isset($attributes['secure']) || $domain !== $host
+                || ($path !== '/' && $path !== '/api' && $path !== '/api/' && $path !== '/api/status')
+                || (isset($attributes['max-age']) && (int) $attributes['max-age'] <= 0)
+                || (!isset($attributes['max-age']) && $expires !== false && $expires <= time())
+            ) {
+                continue;
+            }
+
+            $cookies[$matches[1]] = $pair;
+        }
+
+        return implode('; ', $cookies);
     }
 
     /**

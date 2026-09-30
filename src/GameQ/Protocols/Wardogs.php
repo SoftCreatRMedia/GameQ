@@ -17,6 +17,7 @@
 namespace GameQ\Protocols;
 
 use GameQ\Exception\ProtocolException;
+use GameQ\Http\Request;
 use GameQ\Result;
 use GameQ\Server;
 use JsonException;
@@ -200,54 +201,27 @@ class Wardogs extends Http
      */
     private function request(string $url, string $password, string $scheme): ?array
     {
-        $handle = curl_init($url);
-
-        if ($handle === false) {
+        if (!str_starts_with($url, $scheme . '://')) {
             return null;
         }
 
-        $response = '';
         $timeout = max(1, $this->normalizeInteger($this->options['http_timeout'] ?? 5, 5));
-        $allowedProtocol = $scheme === 'https' ? CURLPROTO_HTTPS : CURLPROTO_HTTP;
+        $response = $this->sendHttpRequest(new Request(
+            'GET',
+            $url,
+            ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $password],
+            timeout: $timeout,
+            maxResponseBytes: self::MAX_RESPONSE_BYTES,
+        ));
+
+        if ($response === null || $response->statusCode !== 200) {
+            return null;
+        }
 
         try {
-            curl_setopt_array($handle, [
-                CURLOPT_RETURNTRANSFER => false,
-                CURLOPT_CONNECTTIMEOUT => $timeout,
-                CURLOPT_TIMEOUT => $timeout,
-                CURLOPT_PROTOCOLS => $allowedProtocol,
-                CURLOPT_REDIR_PROTOCOLS => $allowedProtocol,
-                CURLOPT_FOLLOWLOCATION => false,
-                CURLOPT_MAXFILESIZE => self::MAX_RESPONSE_BYTES,
-                CURLOPT_HTTPHEADER => [
-                    'Accept: application/json',
-                    'Authorization: Bearer ' . $password,
-                ],
-                CURLOPT_WRITEFUNCTION => static function ($curl, string $chunk) use (&$response): int {
-                    if (strlen($response) + strlen($chunk) > self::MAX_RESPONSE_BYTES) {
-                        return 0;
-                    }
-
-                    $response .= $chunk;
-
-                    return strlen($chunk);
-                },
-            ]);
-
-            $success = curl_exec($handle);
-            $statusCode = curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
-
-            if ($success === false || $statusCode !== 200) {
-                return null;
-            }
-
-            try {
-                return $this->normalizeStringKeyedArray(json_decode($response, true, 512, JSON_THROW_ON_ERROR));
-            } catch (JsonException) {
-                return null;
-            }
-        } finally {
-            unset($handle);
+            return $this->normalizeStringKeyedArray(json_decode($response->body, true, 512, JSON_THROW_ON_ERROR));
+        } catch (JsonException) {
+            return null;
         }
     }
 
