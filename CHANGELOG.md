@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [5.2.3] - 2026-10-07
+
+### Fixed
+
+- SCUM master-list queries now support mixed short and extended records introduced in build 1.3.4.0.160241, validate record boundaries and response framing, and decode the packed game version correctly.
+
+### Added
+
+- SCUM results now include TPS, signed playstyle, server class, flags, and the detected record format.
+
 ## [5.2.2] - 2026-10-02
 
 ### Added

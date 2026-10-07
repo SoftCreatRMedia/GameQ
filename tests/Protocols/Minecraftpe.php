@@ -35,14 +35,12 @@ class Minecraftpe extends Base
     {
         $providers = Minecraftbe::loadData();
 
-        foreach ($providers as &$provider) {
-            foreach ($provider[1] as &$result) {
-                $result['gq_name'] = 'MinecraftPE';
-                $result['gq_type'] = 'minecraftpe';
+        foreach ($providers as $providerIndex => $provider) {
+            foreach (array_keys($provider[1]) as $server) {
+                $providers[$providerIndex][1][$server]['gq_name'] = 'MinecraftPE';
+                $providers[$providerIndex][1][$server]['gq_type'] = 'minecraftpe';
             }
         }
-
-        unset($provider, $result);
 
         return $providers;
     }
