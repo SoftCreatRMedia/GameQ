@@ -1,0 +1,11 @@
+{
+    "request": "RFFQMQEAeFY0EgAAAAABAAAAWADbCDImZzt7InNlY3Rpb25zIjpbImluZm8iLCJwbGF5ZXJzIiwicnVsZXMiLCJnYW1lIiwidGVhbXMiLCJyb3RhdGlvbiIsImJ1aWxkIl19",
+    "challenge": "RFFQMYIAeFY0EgAAAAABAAAAWADbCDImZzs=",
+    "responses": [
+        "RFFQMYMAeFY0EgAAAAABAAAAAAAAAAAAAAB7ImNvZGUiOiJxdW90YSIsImVycm9yIjoiUmVzcG9uc2UgdG9vIGxhcmdlICgzNDMwNSBieXRlcywgbGltaXQgMTg3ODQpLiBBc2sgZm9yIGZld2VyIHNlY3Rpb25zLiJ9"
+    ],
+    "body": {
+        "code": "quota",
+        "error": "Response too large (34305 bytes, limit 18784). Ask for fewer sections."
+    }
+}

@@ -1,0 +1,40 @@
+3f1b93fc828d94063b0d26ed0975ed736cf607c69f663ba7f24c46d542858b99	Captured server 1	prisoner	2	30	128	1	36	1	0	0					opence		SWAT				
+cad3a04983ecd2ea1af436e5a0abb6c325b1a7629718e7ddd97ab0d8f184f275	Captured server 2	bigass_open_v1.1	2	29	128	1	36	0	0	0					opence		Gun Game				
+9363dc79f27d0ae5435c4a18befc776b90892c9e125553b56996d672e9baf9ff	Captured server 3	beavercreek	2	10	128	1	32	0	0	1					opence		Ranked TS				
+ab02888c304262d026416ab74e4a460d33bd07a0ab2413c8ecfd4b891b3d88f2	Captured server 4	bloodgulch	1	9	128	1	36	4	0	1					opence		Tank Mayhem				
+897cf9e078b69abded1b538862c2287f332c4bafc517fd561d806242e5e9419b	Captured server 5	hangemhigh	2	8	128	1	26	4	0	0					opence		PPP				
+64f69308a72fe8a6778c6396775020f79fd01b584f027e14639b337806192528	Captured server 6	bloodgruntv1	1	6	32	1	36	0	0	1					opence		BG Snipers				
+6513ebf5b7bd84f76cd9c37eb8682a2c2e7c56074546c6844394b2b3056675ed	Captured server 7	levels\test\wizard\wizard	2	4	32	1	36	4	60	0	-1:Player 1|-1:Player 2|-1:Player 3|-1:Player 4	NA-US	pc_linux	dedicated	delta	legacy:4		0000941f			
+869c765754821028c05830e50bf86a09106970bfb54aa3bcc5b1abdab1819693	Captured server 8	beavercreek	2	4	8	1	36	0	0	0					opence		Slayer Pro				
+ded2005bc832a99fc9261a10532331a8b065b939f677b492bd3286edaf3572b3	Captured server 9	sidewinder	2	4	4	0	26	25	0	0					opence		Asesino				
+b0c86f9058a74c4aeba8464ac9c05f16bc7138c5ea68e0bbbc03428d2d2916c7	Captured server 10	bigass_open_v1.1	2	3	8	1	36	54	0	0					opence		Asesino				
+382b732595f0c8101d93c8b7aac6ffed59ff1f669b9e05a4559cbaccaa8b6482	Captured server 11	ratrace	2	3	16	1	11	5	0	0					opence		Asesino pro				
+1d9d71291b3e53ee836e881cbbe09c4fe4b4a2af87b6d9b7126f450e6b5e19dc	Captured server 12	bloodgulch	1	2	32	0	32	0	0	1					opence		Sniper CTF				
+652df7d027682db5bee7b4b8969c0668974c6309097d12b851b8fb9b282bbc57	Captured server 13	bloodgulch	2	2	128	1	29	2	0	0					opence		Slayer Pro				
+13548d73417f3a9bf270311323098b9788446170a204310861ef77b3cd84de1b	Captured server 14	beavercreek	2	1	128	0	32	4	0	0					opence		Slayer Pro				
+595fe4ae4cc470a3d63a686d4ba18fccf82daf8160a917d8d1cde0dc8d43057a	Captured server 15	sciophobia@ce	2	1	16	1	32	19	100	0	-1:Player 1	NA-US	pc_linux	dedicated	delta	legacy:1		0000fc1f			
+128ea80ec9884c6fba03b4408caa7a54d287a2ea2be049571ec45a479a493d1f	Captured server 16	beavercreek	2	1	128	1	36	4	0	0					opence		Gun Game				
+349b1b3655f535de082bc44404b9622416180b08f9c7a6cd52134e815538a10a	Captured server 17	bloodgulch	1	1	16	0	26	0	0	0					opence		Asesino				
+e3d2e88303fe9157dc7b31366a772e0db63654f5560191c400a5acdedfb66381	Captured server 18	levels\test\sidewinder\sidewinder	2	0	32	1	32	2	50	1		NA-CA	pc_linux	dedicated	delta			0000fc1f			
+001e044d0409896125a7c0165592d43afc0cbbc6b579976bec7ef3537bb193ea	Captured server 19	levels\test\bloodgulch\bloodgulch	1	0	128	1	32	15	3	1		NA-CA	pc_linux	dedicated	delta			0000fc1f			
+f85cd08961f62d0493bb1d29c2ea344ddf612bd3d0fc8ce256e6a76bea20e6d0	Captured server 20	levels\test\bloodgulch\bloodgulch	1	0	32	1	32	2	3	1		NA-CA	pc_linux	dedicated	delta			0000fc1f			
+5a61ed4b6713455f8db10e013e72e1dcba0884f70dc47d0db3b64e85c0d8107d	Captured server 21	bloodgulch@cex	1	0	32	1	32	9	3	1		NA-CA	pc_linux	dedicated	delta			0000fc1f	Abyss	Halo CE+	CE+
+bc8e4d6d21a96bd15ac05432f0a77cde5fb0433dd545aec78eb688eae87dd6fe	Captured server 22	levels\test\damnation\damnation	2	0	8	1	32	14	50	1		NA-CA	pc_linux	dedicated	delta			0000fc1f			
+6e07d40ef392dbf86a96e660f0943292746d51995bc302660d2b662068b33940	Captured server 23	levels\test\longest\longest	2	0	16	1	32	12	15	0		NA-CA	pc_linux	dedicated	delta			0000fc1f			
+f6d144ac870b002ebda75630b0ececa412b40879a1dcca1bc43dc59683bf063e	Captured server 24	levels\test\ratrace\ratrace	2	0	128	1	32	15	50	0		NA-CA	pc_linux	dedicated	delta			0000fc1f			
+532eca0517d1b9ab6ef7756b21f884c061698fafec4ad6444c66d39109896426	Captured server 25	levels\test\longest\longest	2	0	24	1	32	0	50	1		NA-CA	pc_linux	dedicated	delta			0000fc1f			
+32b986661f6eaf42ad5824a0e88458103873e61d85c91b423f0a517b58bed821	Captured server 26	levels\test\bloodgulch\bloodgulch	1	0	32	1	32	4	3	1		NA-CA	pc_linux	dedicated	delta			0000fc1f			
+fcc3743349761dac54a5f0cfa536fcfb9e481ce3e509c47c3f033302b69eba37	Captured server 27	levels\test\bloodgulch\bloodgulch	1	0	32	1	32	6	3	1		NA-CA	pc_linux	dedicated	delta			0000fc1f			
+5f7ad21c5c47e0f2477f13a5f97e3a502eae373f35530873c6a9509445c8e27b	Captured server 28	levels\test\chillout\chillout	2	0	4	1	22	1	50	1		NA-US									
+e9de98026ac62933da4ff9619cdcd127b0b1a45bb6a4982c20176444a2a8ff6e	Captured server 29	levels\test\wizard\wizard	1	0	8	1	22	15	5	1		NA-US									
+3d5cef6f9b2933350361a4b639eb38a3d131cf8e1c06a9a9ede752a847eedd5d	Captured server 30	levels\test\chillout\chillout	2	0	8	1	22	0	50	1		NA-US									
+3fa74493fc4a5d0539ca40bbc1c8a7c080b55a0c2708fba95256ab7b2503e6b0	Captured server 31	levels\test\carousel\carousel	2	0	8	1	22	1	100	0		NA-US									
+62ada23288b0fc88bee1ca66c0dde24cf277fb8624ce5e6fca25e32705d5f78d	Captured server 32	concealed@ce	4	0	16	1	32	15	3	0		NA-US	pc_linux	dedicated	delta			0000fc1f			
+ce3bc5f33ef43dbb086efddeb80ab9f3a68e41f06b6c28759f0011794d953eeb	Captured server 33	bloodgulch	1	0	128	1	36	4	0	1					opence		CLB Pro				
+f2fcdc1b6a7ea3f0c8d01d1ff48976713204d9217729086f980348458b7477c0	Captured server 34	carousel	0	0	128	1	11	2	0	0					opence						
+8c3a7b16c17ca15570ffc07e224db48d0b61140ee7bdcae62fdc1d75e8fe5ae3	Captured server 35	wizard	0	0	128	1	26	1	0	0					opence		Normal				
+580f16269087ac86eb731fb9e3a46c03b453bf412b919e2ce4a9263c6562943c	Captured server 36	levels\test\prisoner\prisoner	2	0	4	1	32	10	50	1		NA-US	pc_windows	player	delta	pc_windows:1		0000941f			
+11da3b41b972e2564fac98aed03c7a347accaa6b060965b33dcd833236e9ae2f	Captured server 37	ratrace	0	0	128	1	11	2	0	0					opence						
+4ef01a673a38ed20bbe61a3ae6849a3290975baa207355f3fec536bc7811e1ca	Captured server 38	levels\test\bloodgulch\bloodgulch	2	0	128	1	32	18	15	0		NA-US	pc_linux	dedicated	delta			0000941f			
+2bdc553469544ff7f251fff79acc85679d790770ef59c51b9ead7638b795d2df	Captured server 39	new_mombasa_classic@ce	2	0	32	1	29	4	15	0		NA-CA	pc_linux	dedicated	delta			00000413			
+dcdc09b5aa50c413eae8214319d155c8402a75d5906aba095f2924d89f0ca2b8	Captured server 40	levels\test\carousel\carousel	2	0	32	1	36	15	9999	1		NA-US	pc_linux	dedicated	delta			0000941f

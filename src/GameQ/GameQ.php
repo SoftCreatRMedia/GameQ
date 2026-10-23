@@ -26,6 +26,7 @@ use GameQ\Filters\Base;
 use GameQ\Http\ClientInterface;
 use GameQ\Http\CurlClient;
 use GameQ\Protocols\Http;
+use GameQ\Protocols\VirtualHttp;
 use GameQ\Query\Core;
 use GameQ\Query\Native;
 use InvalidArgumentException;
@@ -757,10 +758,10 @@ class GameQ
         }
 
         // Now add some default stuff
-        $results['gq_address'] = $results['gq_address'] ?? $server->ip();
-        $results['gq_port_client'] = $server->portClient();
-        $results['gq_port_query'] = $results['gq_port_query']
-            ?? $server->portQuery();
+        $virtual = $server->protocolInstance() instanceof VirtualHttp;
+        $results['gq_address'] = $virtual ? null : ($results['gq_address'] ?? $server->ip());
+        $results['gq_port_client'] = $virtual ? null : $server->portClient();
+        $results['gq_port_query'] = $virtual ? null : ($results['gq_port_query'] ?? $server->portQuery());
         $results['gq_protocol'] = $server->protocolInstance()->getProtocol();
         $results['gq_type'] = (string) $server->protocolInstance();
         $results['gq_name'] = $server->protocolInstance()->nameLong();

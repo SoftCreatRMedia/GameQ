@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented in this file.
 
+## WIP
+
+### Added
+
+- Beta Subnautica 2 support for servers running BeaconServer, including Source/A2S server information, player names and connection times, advertised password state, build metadata, and rules.
+- Beta Delverium support for servers running LodestoneServer, including Source/A2S server information, player counts and names, advertised password state, plugin version, and rules.
+- Beta Chupathingy CE Delta List support through its public invite-keyed directory, including server, map, mode, player, team-assignment, and map-pack metadata, plus invite-based join links.
+- Beta Dot Query Protocol (DQP1) support, including address-bound challenges, fragmented and gzip-compressed responses, conditional revision queries, and optional performance and statistics sections.
+- Sanitized real-server captures and regression tests for the new integrations, including empty and populated responses, malformed input, and stale-heartbeat handling.
+
+### Changed
+
+- Extended server targets to support invite-keyed HTTP directories without inventing gameplay addresses, query ports, or latency.
+- Updated the supported-protocol catalog and option documentation for 192 identifiers.
+
+### Compatibility
+
+- Chupathingy targets require `options.server_invite` and must omit `host` and `options.query_port`. Their `gq_address`, `gq_port_client`, and `gq_port_query` results are `null`; typed network-address and port accessors are unavailable for these targets. Existing IP/port-based protocols retain their behavior.
+
 ## [5.2.3] - 2026-10-07
 
 ### Fixed

@@ -1,0 +1,13 @@
+{
+    "request": "RFFQMQEEeFY0EgAAAAABAAAAf9jBnqtygUp7InNlY3Rpb25zIjpbImluZm8iLCJwbGF5ZXJzIiwicnVsZXMiLCJnYW1lIiwidGVhbXMiLCJyb3RhdGlvbiIsImJ1aWxkIl0sImlmX3JldiI6MX0=",
+    "challenge": "RFFQMYIAeFY0EgAAAAABAAAAf9jBnqtygUo=",
+    "responses": [
+        "RFFQMYEAeFY0EgMAAAABAAAAf9jBnqtygUp7ImV0YWciOiJlNzRmYzY0ODJjYzY4YzNkNjc3YjhkNDdiMGZhMDc4NmVlNjI2YzBiYTJlNTBkOTUzZjUxZjY0YWMwYTgxZjgxIiwicmV2IjoxLCJ0cyI6MTc5Mjc5MDg5NCwidW5jaGFuZ2VkIjp0cnVlfQ=="
+    ],
+    "body": {
+        "etag": "e74fc6482cc68c3d677b8d47b0fa0786ee626c0ba2e50d953f51f64ac0a81f81",
+        "rev": 1,
+        "ts": 1792790894,
+        "unchanged": true
+    }
+}

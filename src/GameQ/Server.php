@@ -20,6 +20,7 @@
 namespace GameQ;
 
 use GameQ\Exception\ServerException;
+use GameQ\Protocols\VirtualHttp;
 use GameQ\Query\Core;
 use LogicException;
 
@@ -109,6 +110,14 @@ class Server
 
         if (!is_string($serverType) || $serverType === '') {
             throw new ServerException("Missing server info key '" . self::SERVER_TYPE . "'!");
+        }
+
+        $protocolClass = sprintf('GameQ\\Protocols\\%s', ucfirst(strtolower($serverType)));
+
+        if (is_a($protocolClass, VirtualHttp::class, true)) {
+            $this->initializeVirtualTarget($server_info, $protocolClass);
+
+            return;
         }
 
         // Check for server host
@@ -219,6 +228,35 @@ class Server
                 $this->ip = $resolved;
             }
         }
+    }
+
+    /**
+     * @param array<string, mixed> $serverInfo
+     * @param class-string<VirtualHttp> $protocolClass
+     * @throws ServerException
+     */
+    private function initializeVirtualTarget(array $serverInfo, string $protocolClass): void
+    {
+        if (array_key_exists(self::SERVER_HOST, $serverInfo)) {
+            throw new ServerException('Virtual directory targets do not accept a host address or port.');
+        }
+
+        $options = array_key_exists(self::SERVER_OPTIONS, $serverInfo) ? $serverInfo[self::SERVER_OPTIONS] : [];
+
+        if (!is_array($options)) {
+            throw new ServerException('Server options must be an array.');
+        }
+
+        if (array_key_exists(self::SERVER_OPTIONS_QUERY_PORT, $options)) {
+            throw new ServerException('Virtual directory targets do not have a query port.');
+        }
+
+        $this->options = array_filter($options, is_string(...), ARRAY_FILTER_USE_KEY);
+        $protocol = new $protocolClass($this->options);
+        $this->protocol = $protocol;
+        $targetId = $protocol->targetId();
+        $id = $serverInfo[self::SERVER_ID] ?? null;
+        $this->id = is_string($id) && $id !== '' ? $id : $targetId;
     }
 
     /**
@@ -363,6 +401,10 @@ class Server
 
         if ($joinLink === null) {
             return null;
+        }
+
+        if ($this->protocolInstance() instanceof VirtualHttp) {
+            return $joinLink;
         }
 
         return sprintf($joinLink, $this->ip(), $this->portClient());

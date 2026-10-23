@@ -1,0 +1,153 @@
+{
+    "request": "RFFQMQEAeFY0EgAAAAABAAAAY90qmSidSDF7InNlY3Rpb25zIjpbImluZm8iLCJwbGF5ZXJzIiwicnVsZXMiLCJnYW1lIiwidGVhbXMiLCJyb3RhdGlvbiIsImJ1aWxkIl19",
+    "challenge": "RFFQMYIAeFY0EgAAAAABAAAAY90qmSidSDE=",
+    "responses": [
+        "RFFQMYECeFY0EgEAAAADAAAAY90qmSidSDF7ImV0YWciOiJmYzRhYzEyMDI5NmY5YzUxZWQyY2I4Mzc0ODI1MzU1YmUzNjNjOGI5ZWIwYzM0NWIyZmMwOGFmOWY3YWM4MzA3IiwicmV2IjoxLCJzZWN0aW9ucyI6eyJidWlsZCI6eyJhcmNoIjoieDg2XzY0IiwiZGVidWciOnRydWUsImVuZ2luZSI6IkdvZG90IDQuNy4yLXN0YWJsZSAob2ZmaWNpYWwpIiwiZW5naW5lX21ham9yIjo0LCJlbmdpbmVfbWlub3IiOjcsImhlYWRsZXNzIjp0cnVlLCJvcyI6ImxpbnV4IiwicXVlcnkiOjEsInNlcnZlciI6IjAuMS4wIn0sImdhbWUiOnsiYXV0b19iaG9wIjp0cnVlLCJkZWF0aG1hdGNoIjp0cnVlLCJodW50ZXJzIjp0cnVlLCJtYXAiOiJiaG9wX2cyZ19pbnRybyIsInByb3BzIjpmYWxzZSwicnVubmluZyI6MCwic3R5bGVzIjpbIm5vcm1hbCIsInNpZGV3YXlzIiwiaGFsZl9zaWRld2F5cyIsImJhY2t3YXJkcyIsImxvd19ncmF2aXR5IiwicHJlYmhvcCJdLCJ0aWNrX3JhdGUiOjEwMCwidHJhY2tzIjpbMCwxLDIsMyw0XX0sImluZm8iOnsiYXBwIjoiZzJnZmFzdCIsImJvdHMiOjAsImNvbm5lY3RpbmciOjAsImVuZXRfcG9ydCI6Mjg3NjYsImZvbGRlciI6ImcyZ2Zhc3QiLCJnYW1lIjoiZG90IiwiZ2FtZV9pZCI6IiIsIm1hcCI6ImJob3BfZzJnX2ludHJvIiwibWF4X3BsYXllcnMiOjE2LCJuYW1lIjoiZzJnZmFzdCB0ZXN0Iiwib3MiOiJsaW51eCIsInBsYXllcnMiOjEsInBvcnQiOjI4NzY2LCJwcm90b2NvbCI6MSwicXVlcnkiOnsicG9ydCI6MjcwOTksInByb3RvY29sIjoiRFFQMSIsInZlcnNpb24iOjEsIndlYnNvY2tldF9wb3J0IjowfSwicmVzZXJ2ZWRfc2xvdHMiOjAsInNlY3VyZSI6ZmFsc2UsInNlcnZlcl9pZCI6IiIsInNlcnZlcl90eXBlIjoiZGVkaWNhdGVkIiwic2lnbm9uIjoiOWFkZmUyZmRiNWVmIiwic3RhdGUiOiJydW5uaW5nIiwidGFncyI6W10sInRpY2tyYXRlIjoxMDAsInRyYW5zcG9ydCI6IkR1YWwiLCJ1cHRpbWUiOjI0LCJ2ZXJzaW9uIjoiMC4xLjAiLCJ2aXNpYmlsaXR5IjoicHVibGljIiwid2ViX2NsaWVudHMiOnRydWV9LCJwbGF5ZXJzIjpbeyJib3QiOmZhbHNlLCJkdXJhdGlvbiI6MTQsIm5hbWUiOiJHYW1lUSBUZXN0IFBsYXllciIsInBpbmciOjE0LCJzY29yZSI6MCwic3RhdGUiOiJzcGF3bmVkIiwidXNlcmlkIjoxfV0sInJvdGF0aW9uIjp7ImN1cnJlbnQiOiIiLCJnYW1lcyI6WyJn",
+        "RFFQMYECeFY0EgEAAAADAAEAY90qmSidSDEyZ2Zhc3QiXX0sInJ1bGVzIjp7ImJvdF9xdW90YSI6IjAiLCJib3RfcXVvdGFfbW9kZSI6ImZpbGwiLCJob3N0bmFtZSI6ImcyZ2Zhc3QgdGVzdCIsIm1wX2ZvcmNlY2FtZXJhIjoiMCIsIm1wX2ZvcmNldmlldyI6IjAiLCJtcF9mcmVlcm9hbSI6IjEiLCJtcF9mcmVlcm9hbV9zcGVlZCI6IjEyLjAiLCJucGNfcmVhY3Rpb25fbWluIjoiMC4wNSIsIm5wY19yZWFjdGlvbl9zY2FsZSI6IjEiLCJucGNfc2tpbGwiOiIwIiwic3ZfYWNjZWxlcmF0ZSI6IjUuMCIsInN2X2FpcmFjY2VsZXJhdGUiOiIxMDAwLjAiLCJzdl9haXJ3aXNoY2FwIjoiMzAuMCIsInN2X2FsbG93X2Rlc2t0b3AiOiIxIiwic3ZfYWxsb3dfbW9iaWxlIjoiMSIsInN2X2FsbG93X3dlYiI6IjEiLCJzdl9hdXRvYnVubnlob3BwaW5nIjoiMSIsInN2X2NoYXRfY29tbWFuZHMiOiIxIiwic3ZfY2hlYXRzIjoiMCIsInN2X2NyZXN0bGF1bmNoIjoiMS4yNSIsInN2X2VkZ2VmcmljdGlvbiI6IjEuMCIsInN2X2VuYWJsZWJ1bm55aG9wcGluZyI6IjEiLCJzdl9mcmljdGlvbiI6IjQuMCIsInN2X2dyYXZpdHkiOiI4MDAuMCIsInN2X2hpYmVybmF0ZV93aGVuX2VtcHR5IjoiMCIsInN2X2p1bXBidWZmZXIiOiIwLjAiLCJzdl9tYXhzcGVlZCI6IjI1MC4wIiwic3ZfbWF4dmVsb2NpdHkiOiIzNTAwLjAiLCJzdl9xdWVyeV9hcHAiOiJnMmdmYXN0Iiwic3ZfcmFnZG9sbCI6IjEiLCJzdl9yYWdkb2xsX2ZvcmNlIjoiMS4wIiwic3ZfcmFnZG9sbF9tYXgiOiI4Iiwic3ZfcmFnZG9sbF9yZWFjdGlvbnMiOiIiLCJzdl9yYWdkb2xsX3N0eWxlIjoicmFnZG9sbCIsInN2X3JhZ2RvbGxfdGltZSI6IjEwLjAiLCJzdl9zdGVwc2l6ZSI6IjE4LjAiLCJzdl9zdG9wc3BlZWQiOiI3NS4wIiwic3ZfdGlja3JhdGUiOiIxMDAiLCJzdl92b2ljZV9lbmFibGUiOiIxIiwic3Zfdm9pY2VfbW9kZSI6IjAiLCJzdl92b2ljZV9wcm94aW1pdHlfZmFsbG9mZiI6IjEiLCJzdl92b2ljZV9wcm94aW1pdHlfZ2xvYmFsX2J5cGFzcyI6IjAiLCJzdl92b2ljZV9wcm94aW1pdHlfbWluIjoiMi4wIiwic3Zfdm9pY2VfcHJveGltaXR5X29jY2x1c2lvbiI6IjAiLCJzdl92b2ljZV9wcm94aW1pdHlfb2NjbHVzaW9uX2dhaW4iOiIwLjM1Iiwic3Zfdm9pY2VfcHJveGltaXR5X3JhbmdlIjoiMTIwLjAiLCJzdl92b2ljZV9wcm94aW1pdHlfdGVhbV9ieXBh",
+        "RFFQMYECeFY0EgEAAAADAAIAY90qmSidSDFzcyI6IjEifSwidGVhbXMiOnt9fSwidHMiOjE3OTI3OTA1OTh9"
+    ],
+    "body": {
+        "etag": "fc4ac120296f9c51ed2cb8374825355be363c8b9eb0c345b2fc08af9f7ac8307",
+        "rev": 1,
+        "sections": {
+            "build": {
+                "arch": "x86_64",
+                "debug": true,
+                "engine": "Godot 4.7.2-stable (official)",
+                "engine_major": 4,
+                "engine_minor": 7,
+                "headless": true,
+                "os": "linux",
+                "query": 1,
+                "server": "0.1.0"
+            },
+            "game": {
+                "auto_bhop": true,
+                "deathmatch": true,
+                "hunters": true,
+                "map": "bhop_g2g_intro",
+                "props": false,
+                "running": 0,
+                "styles": [
+                    "normal",
+                    "sideways",
+                    "half_sideways",
+                    "backwards",
+                    "low_gravity",
+                    "prebhop"
+                ],
+                "tick_rate": 100,
+                "tracks": [
+                    0,
+                    1,
+                    2,
+                    3,
+                    4
+                ]
+            },
+            "info": {
+                "app": "g2gfast",
+                "bots": 0,
+                "connecting": 0,
+                "enet_port": 28766,
+                "folder": "g2gfast",
+                "game": "dot",
+                "game_id": "",
+                "map": "bhop_g2g_intro",
+                "max_players": 16,
+                "name": "g2gfast test",
+                "os": "linux",
+                "players": 1,
+                "port": 28766,
+                "protocol": 1,
+                "query": {
+                    "port": 27099,
+                    "protocol": "DQP1",
+                    "version": 1,
+                    "websocket_port": 0
+                },
+                "reserved_slots": 0,
+                "secure": false,
+                "server_id": "",
+                "server_type": "dedicated",
+                "signon": "9adfe2fdb5ef",
+                "state": "running",
+                "tags": [],
+                "tickrate": 100,
+                "transport": "Dual",
+                "uptime": 24,
+                "version": "0.1.0",
+                "visibility": "public",
+                "web_clients": true
+            },
+            "players": [
+                {
+                    "bot": false,
+                    "duration": 14,
+                    "name": "GameQ Test Player",
+                    "ping": 14,
+                    "score": 0,
+                    "state": "spawned",
+                    "userid": 1
+                }
+            ],
+            "rotation": {
+                "current": "",
+                "games": [
+                    "g2gfast"
+                ]
+            },
+            "rules": {
+                "bot_quota": "0",
+                "bot_quota_mode": "fill",
+                "hostname": "g2gfast test",
+                "mp_forcecamera": "0",
+                "mp_forceview": "0",
+                "mp_freeroam": "1",
+                "mp_freeroam_speed": "12.0",
+                "npc_reaction_min": "0.05",
+                "npc_reaction_scale": "1",
+                "npc_skill": "0",
+                "sv_accelerate": "5.0",
+                "sv_airaccelerate": "1000.0",
+                "sv_airwishcap": "30.0",
+                "sv_allow_desktop": "1",
+                "sv_allow_mobile": "1",
+                "sv_allow_web": "1",
+                "sv_autobunnyhopping": "1",
+                "sv_chat_commands": "1",
+                "sv_cheats": "0",
+                "sv_crestlaunch": "1.25",
+                "sv_edgefriction": "1.0",
+                "sv_enablebunnyhopping": "1",
+                "sv_friction": "4.0",
+                "sv_gravity": "800.0",
+                "sv_hibernate_when_empty": "0",
+                "sv_jumpbuffer": "0.0",
+                "sv_maxspeed": "250.0",
+                "sv_maxvelocity": "3500.0",
+                "sv_query_app": "g2gfast",
+                "sv_ragdoll": "1",
+                "sv_ragdoll_force": "1.0",
+                "sv_ragdoll_max": "8",
+                "sv_ragdoll_reactions": "",
+                "sv_ragdoll_style": "ragdoll",
+                "sv_ragdoll_time": "10.0",
+                "sv_stepsize": "18.0",
+                "sv_stopspeed": "75.0",
+                "sv_tickrate": "100",
+                "sv_voice_enable": "1",
+                "sv_voice_mode": "0",
+                "sv_voice_proximity_falloff": "1",
+                "sv_voice_proximity_global_bypass": "0",
+                "sv_voice_proximity_min": "2.0",
+                "sv_voice_proximity_occlusion": "0",
+                "sv_voice_proximity_occlusion_gain": "0.35",
+                "sv_voice_proximity_range": "120.0",
+                "sv_voice_proximity_team_bypass": "1"
+            },
+            "teams": []
+        },
+        "ts": 1792790598
+    }
+}
