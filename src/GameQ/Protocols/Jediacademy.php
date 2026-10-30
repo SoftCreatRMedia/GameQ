@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Jedi Academy Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Jediacademy extends Quake3

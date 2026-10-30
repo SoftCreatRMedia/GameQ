@@ -64,6 +64,7 @@ class Subnautica2 extends TestBase
         self::assertSame([], $result['teams']);
         self::assertIsArray($result['players']);
         self::assertCount($count, $result['players']);
+
         if ($count === 1) {
             self::assertIsArray($result['players'][0]);
             self::assertSame('GameQ_Test_Player', $result['players'][0]['gq_name']);
@@ -130,8 +131,10 @@ class Subnautica2 extends TestBase
         $capture = json_decode($contents, true, 64, JSON_THROW_ON_ERROR);
         self::assertIsArray($capture);
         $packets = [];
+
         foreach (['info', 'players', 'rules'] as $stage) {
             self::assertIsArray($capture[$stage]);
+
             foreach ($capture[$stage] as $hex) {
                 self::assertIsString($hex);
                 $packet = hex2bin($hex);

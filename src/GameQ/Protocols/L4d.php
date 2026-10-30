@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class L4d
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class L4d extends Source

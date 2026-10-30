@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Space Engineers Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Spaceengineers extends Source

@@ -414,6 +414,7 @@ class Dragonwilds extends Base
     /**
      * @param array<string, mixed> $attributeOverrides
      * @param array<string, mixed> $sessionOverrides
+     *
      * @return array<string, mixed>
      */
     private function session(
@@ -445,6 +446,7 @@ class Dragonwilds extends Base
 
     /**
      * @param list<array<string, mixed>> $sessions
+     *
      * @return array<string, mixed>
      *
      * @throws JsonException

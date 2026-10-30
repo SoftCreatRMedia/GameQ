@@ -27,6 +27,7 @@ use GameQ\Result;
  * Call of Duty: Modern Warfare 2 Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Wilson Jesus <>
  */
 class Codmw2 extends Quake3
@@ -43,6 +44,7 @@ class Codmw2 extends Quake3
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array

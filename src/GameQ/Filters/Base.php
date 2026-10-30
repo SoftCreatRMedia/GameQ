@@ -55,6 +55,7 @@ abstract class Base
      * Apply the filter to the data
      *
      * @param array<string, mixed> $result
+     *
      * @return array<string, mixed>
      */
     abstract public function apply(array $result, Server $server): array;

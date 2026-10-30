@@ -31,6 +31,7 @@ use GameQ\Result;
  * corresponding query instead.
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Bfbc2 extends Protocol
@@ -113,6 +114,7 @@ class Bfbc2 extends Protocol
      * Process the response for the StarMade server
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -154,6 +156,7 @@ class Bfbc2 extends Protocol
      * Decode the buffer into a usable format
      *
      * @return list<string>
+     *
      * @throws ProtocolException
      */
     protected function decode(Buffer $buffer): array
@@ -179,7 +182,9 @@ class Bfbc2 extends Protocol
      * Identify a response from its decoded payload structure.
      *
      * @param list<string> $items
+     *
      * @return 'details'|'players'|'version'
+     *
      * @throws ProtocolException
      */
     protected function identifyResponse(array $items): string
@@ -252,6 +257,7 @@ class Bfbc2 extends Protocol
      * Process the server details
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer): array
@@ -288,6 +294,7 @@ class Bfbc2 extends Protocol
      * Process the server version
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processVersion(Buffer $buffer): array
@@ -309,6 +316,7 @@ class Bfbc2 extends Protocol
      * Process the players
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array

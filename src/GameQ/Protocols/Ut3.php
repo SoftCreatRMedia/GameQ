@@ -58,6 +58,7 @@ class Ut3 extends Gamespy3
      * Overload the response process so we can make some changes
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array

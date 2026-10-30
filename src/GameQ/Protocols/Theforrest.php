@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Theforrest
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Theforrest extends Source

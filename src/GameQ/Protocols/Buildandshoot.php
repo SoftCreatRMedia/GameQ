@@ -22,6 +22,7 @@ use GameQ\Result;
  * Build and Shoot JSON status protocol.
  *
  * @see https://github.com/piqueserver/piqueserver/blob/master/piqueserver/statusserver.py
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Buildandshoot extends JsonHttp

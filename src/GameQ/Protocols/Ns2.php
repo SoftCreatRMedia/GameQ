@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Ns2
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Ns2 extends Source

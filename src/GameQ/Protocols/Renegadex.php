@@ -23,6 +23,7 @@ use GameQ\Server;
  * Renegade X official master-server protocol.
  *
  * @see https://serverlist-rx.totemarts.services/servers.jsp
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Renegadex extends OfficialDirectory

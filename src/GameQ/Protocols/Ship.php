@@ -49,6 +49,7 @@ class Ship extends Source
      * Player response has unknown data after the last real player
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array

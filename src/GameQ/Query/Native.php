@@ -34,10 +34,13 @@ class Native extends Core
 
     private const MAX_RESPONSE_PACKETS_PER_SOCKET = 1024;
 
+    private const MAX_DATAGRAM_BYTES = 65535;
+
     /**
      * Get the current socket or create one and return
      *
      * @return resource
+     *
      * @throws QueryException
      */
     public function get(): mixed
@@ -60,6 +63,7 @@ class Native extends Core
      * @param string|list<string> $data
      *
      * @return int The number of bytes written
+     *
      * @throws QueryException
      */
     public function write(string|array $data): int
@@ -148,6 +152,12 @@ class Native extends Core
 
             // Set the write buffer
             stream_set_write_buffer($this->socket, 0);
+
+            if ($this->transport === Protocol::TRANSPORT_UDP) {
+                // A UDP read must consume the whole datagram; its tail cannot be
+                // recovered by a subsequent read like a TCP stream's can.
+                stream_set_chunk_size($this->socket, self::MAX_DATAGRAM_BYTES);
+            }
         } else {
             // Reset socket
             $this->socket = null;
@@ -168,6 +178,7 @@ class Native extends Core
      * @param array<int, array{server_id: string, socket: Core}> $sockets
      * @param int $timeout
      * @param int $stream_timeout
+     *
      * @return array<int, list<string>>
      *
      * @throws QueryException
@@ -275,7 +286,10 @@ class Native extends Core
                 // TLS streams can buffer several decrypted records after the underlying socket becomes readable.
                 // Drain everything currently available before waiting in stream_select() again.
                 while (true) {
-                    $response = fread($socket, 32768);
+                    $response = fread(
+                        $socket,
+                        ($streamSockets[$socketId] ?? false) ? 32768 : self::MAX_DATAGRAM_BYTES,
+                    );
 
                     if ($response === false) {
                         break;

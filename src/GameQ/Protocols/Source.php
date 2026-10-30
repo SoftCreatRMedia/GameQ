@@ -165,7 +165,9 @@ class Source extends Protocol
      * Begin with an unchanged A2S_INFO request. Player and rules queries are sent as follow-ups.
      *
      * @param list<string>|string $type
+     *
      * @return array<string, string>|string
+     *
      * @throws ProtocolException
      */
     public function getPacket(array|string $type = []): array|string
@@ -205,6 +207,7 @@ class Source extends Protocol
      * Continue the A2S_INFO, A2S_PLAYER, and A2S_RULES sequence one response at a time.
      *
      * @return list<string>
+     *
      * @throws ProtocolException
      */
     public function getFollowUpPackets(): array
@@ -225,6 +228,14 @@ class Source extends Protocol
         $hasDataResponse = false;
 
         foreach ($responses as $response) {
+            if (str_starts_with($response, self::CONNECTIONLESS_HEADER . "\x6c")) {
+                // Report the denial during parsing, where GameQ can isolate an
+                // offline server instead of interrupting the whole query batch.
+                $this->queryStage = self::STAGE_COMPLETE;
+
+                return [];
+            }
+
             if (str_starts_with($response, self::CONNECTIONLESS_HEADER . "\x41")) {
                 if (strlen($response) !== 9) {
                     throw new ProtocolException('Source challenge response must contain exactly four challenge bytes.');
@@ -257,6 +268,7 @@ class Source extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -305,6 +317,7 @@ class Source extends Protocol
                 if (!is_array($splitPacket)) {
                     throw new ProtocolException("Packet ID '$packet_id' contains conflicting packet data.");
                 }
+
                 $splitPacket[] = $buffer->getBuffer();
                 $packets[$packetKey] = $splitPacket;
             } else {
@@ -331,6 +344,10 @@ class Source extends Protocol
             // Figure out what packet response this is for
             $response_type = $buffer->read();
 
+            if ($response_type === "\x6c") {
+                $this->rejectPrintedResponse($buffer);
+            }
+
             // Figure out which packet response this is
             if (!array_key_exists($response_type, $this->responses)) {
                 throw new ProtocolException(__METHOD__ . " response type '$response_type' is not valid");
@@ -353,12 +370,28 @@ class Source extends Protocol
      */
 
     /**
+     * A2A_PRINT replies explain query denials, including banned query addresses.
+     * Bound and flatten the untrusted text before including it in diagnostics.
+     *
+     * @throws ProtocolException
+     */
+    private function rejectPrintedResponse(Buffer $buffer): never
+    {
+        $message = trim(preg_replace('/[\x00-\x1F\x7F]/', ' ', substr($buffer->getBuffer(), 0, 1024)) ?? '');
+
+        throw new ProtocolException(
+            'Source server rejected the query' . ($message !== '' ? ': ' . $message : '.'),
+        );
+    }
+
+    /**
      * Process the split packets and decompress if necessary
      *
      * @param int $packet_id
      * @param list<string> $packets
      *
      * @return string
+     *
      * @throws ProtocolException
      */
     protected function processPackets(int $packet_id, array $packets = []): string
@@ -565,6 +598,7 @@ class Source extends Protocol
      * Handles processing the details data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer): array
@@ -636,6 +670,7 @@ class Source extends Protocol
      * Handles processing the server details from goldsource response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetailsGoldSource(Buffer $buffer): array
@@ -662,7 +697,8 @@ class Source extends Protocol
         if ($result->get('ismod') === 1) {
             $result->add('mod_urlinfo', $buffer->readString());
             $result->add('mod_urldl', $buffer->readString());
-            $buffer->skip();
+            // Usually empty, but some servers include the mod's engine version here.
+            $buffer->readString();
             $result->add('mod_version', $buffer->readInt32Signed());
             $result->add('mod_size', $buffer->readInt32Signed());
             $result->add('mod_type', $buffer->readInt8());
@@ -679,6 +715,7 @@ class Source extends Protocol
      * Handles processing the player data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array
@@ -712,6 +749,7 @@ class Source extends Protocol
      * Handles processing the rules data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processRules(Buffer $buffer): array
@@ -737,6 +775,7 @@ class Source extends Protocol
      * Advance the sequential A2S_INFO, A2S_PLAYER, and A2S_RULES query.
      *
      * @return list<string>
+     *
      * @throws ProtocolException
      */
     private function advanceQueryStage(): array

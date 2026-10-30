@@ -26,6 +26,4 @@ use Exception;
 /**
  * @author Austin Bischoff <austin@codebeard.com>
  */
-class QueryException extends Exception
-{
-}
+class QueryException extends Exception {}

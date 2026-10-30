@@ -103,6 +103,7 @@ class Gamespy2 extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -118,6 +119,7 @@ class Gamespy2 extends Protocol
      * Handles processing the details data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer): array
@@ -132,6 +134,7 @@ class Gamespy2 extends Protocol
             if ($key === '') {
                 break;
             }
+
             $result->add($key, $this->convertToUtf8($buffer->readString()));
         }
 
@@ -142,6 +145,7 @@ class Gamespy2 extends Protocol
      * Handles processing the players data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array
@@ -167,7 +171,9 @@ class Gamespy2 extends Protocol
      * @param string $dataType
      * @param Buffer $buffer
      * @param Result $result
+     *
      * @return void
+     *
      * @throws ProtocolException
      */
     protected function parsePlayerTeam(string $dataType, Buffer $buffer, Result $result): void

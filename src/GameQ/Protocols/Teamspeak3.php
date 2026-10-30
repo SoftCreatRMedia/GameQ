@@ -102,6 +102,7 @@ class Teamspeak3 extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -172,6 +173,7 @@ class Teamspeak3 extends Protocol
      * Takes data in "key1=value1 key2=value2 ..." and processes it into a usable format
      *
      * @param string $data
+     *
      * @return array<string, string>
      */
     protected function processProperties(string $data): array
@@ -207,6 +209,7 @@ class Teamspeak3 extends Protocol
      *
      * @param string $data
      * @param Result $result
+     *
      * @return void
      */
     protected function processDetails(string $data, Result $result): void
@@ -235,6 +238,7 @@ class Teamspeak3 extends Protocol
      *
      * @param string $data
      * @param Result $result
+     *
      * @return void
      */
     protected function processChannels(string $data, Result $result): void
@@ -261,6 +265,7 @@ class Teamspeak3 extends Protocol
      *
      * @param string $data
      * @param Result $result
+     *
      * @return void
      */
     protected function processPlayers(string $data, Result $result): void

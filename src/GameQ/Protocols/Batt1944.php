@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Battalion 1944
  *
  * @package GameQ\Protocols
+ *
  * @author  TacTicToe66 <https://github.com/TacTicToe66>
  */
 class Batt1944 extends Source

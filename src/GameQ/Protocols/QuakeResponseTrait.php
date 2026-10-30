@@ -28,6 +28,7 @@ trait QuakeResponseTrait
 {
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -44,6 +45,7 @@ trait QuakeResponseTrait
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processStatus(Buffer $buffer): array
@@ -58,12 +60,14 @@ trait QuakeResponseTrait
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     abstract protected function processServerInfo(Buffer $buffer): array;
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     abstract protected function processPlayers(Buffer $buffer): array;

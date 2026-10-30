@@ -101,6 +101,7 @@ class Gamespy extends Protocol
      * Handle processing the status buffer
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processStatus(Buffer $buffer): array
@@ -145,6 +146,7 @@ class Gamespy extends Protocol
                         if (str_starts_with($key, 'playername')) {
                             $numPlayers++;
                         }
+
                         $result->addPlayer(substr($key, 0, $suffix), $this->convertToUtf8($val));
                     }
                 } else {

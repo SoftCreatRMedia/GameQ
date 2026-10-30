@@ -25,6 +25,7 @@ namespace GameQ\Protocols;
  * Based off of BF2
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Projectrealitybf2 extends Bf2

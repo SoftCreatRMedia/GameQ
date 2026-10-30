@@ -39,6 +39,7 @@ class Normalize extends Base
      * Apply this filter
      *
      * @param array<string, mixed> $result
+     *
      * @return array<string, mixed>
      */
     public function apply(array $result, Server $server): array
@@ -101,6 +102,7 @@ class Normalize extends Base
      *
      * @param string $section
      * @param array<array-key, mixed> $data
+     *
      * @return array<string, mixed>
      */
     protected function check(string $section, array $data): array

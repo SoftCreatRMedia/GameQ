@@ -24,6 +24,7 @@ use GameQ\Result;
  * Vice City Multiplayer server protocol.
  *
  * @see https://wiki.vc-mp.org/wiki/Query_Mechanism
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Vcmp extends Openmp

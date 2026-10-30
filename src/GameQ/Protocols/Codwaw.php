@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Call of Duty World at War Class
  *
  * @package GameQ\Protocols
+ *
  * @author  naXe <naxeify@gmail.com>
  * @author  Austin Bischoff <austin@codebeard.com>
  */

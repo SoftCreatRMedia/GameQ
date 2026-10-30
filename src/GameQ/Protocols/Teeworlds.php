@@ -95,6 +95,7 @@ class Teeworlds extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -128,6 +129,7 @@ class Teeworlds extends Protocol
      * Handle processing all of the data returned
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processAll(Buffer $buffer): array

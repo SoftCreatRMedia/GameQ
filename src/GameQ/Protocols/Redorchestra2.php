@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Redorchestra2
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Redorchestra2 extends Source

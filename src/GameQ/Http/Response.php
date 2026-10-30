@@ -31,8 +31,7 @@ final class Response
         public readonly int $statusCode,
         public readonly string $body,
         public readonly array $headers = [],
-    ) {
-    }
+    ) {}
 
     /** @return list<string> */
     public function header(string $name): array

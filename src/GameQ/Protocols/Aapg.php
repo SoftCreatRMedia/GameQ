@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Aapg
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Aapg extends Aa3

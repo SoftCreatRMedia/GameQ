@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Call of Duty 2 Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Cod2 extends Cod

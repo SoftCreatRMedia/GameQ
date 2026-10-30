@@ -40,8 +40,7 @@ class Psr18Client implements ClientInterface
         private readonly PsrClientInterface $client,
         private readonly RequestFactoryInterface $requestFactory,
         private readonly StreamFactoryInterface $streamFactory,
-    ) {
-    }
+    ) {}
 
     public function send(Request $request): Response
     {

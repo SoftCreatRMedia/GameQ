@@ -623,6 +623,7 @@ class Ventrilo extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -738,7 +739,9 @@ class Ventrilo extends Protocol
      * Decrypt the incoming packets
      *
      * @param list<string> $packets
+     *
      * @return string
+     *
      * @throws ProtocolException
      */
     protected function decryptPackets(array $packets = []): string
@@ -777,6 +780,7 @@ class Ventrilo extends Protocol
 
                 $headerCharacters[$index] = $character;
             }
+
             $chars = $headerCharacters;
 
             $a1 = $key & 0xFF;
@@ -863,6 +867,7 @@ class Ventrilo extends Protocol
 
                 $dataCharacters[$index] = $character;
             }
+
             $chars = $dataCharacters;
 
             $data = "";
@@ -934,6 +939,7 @@ class Ventrilo extends Protocol
      * @param string $data
      * @param int $fieldCount
      * @param Result $result
+     *
      * @return void
      */
     protected function processChannel(string $data, int $fieldCount, Result $result): void
@@ -962,6 +968,7 @@ class Ventrilo extends Protocol
      * @param string $data
      * @param int $fieldCount
      * @param Result $result
+     *
      * @return void
      */
     protected function processPlayer(string $data, int $fieldCount, Result $result): void

@@ -30,6 +30,7 @@ use GameQ\Server;
  * Generic HTTP protocol class.  Useful for making http based requests
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 abstract class Http extends Protocol

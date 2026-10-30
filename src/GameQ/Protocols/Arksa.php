@@ -28,6 +28,7 @@ use GameQ\Result;
  * Extends the EOS protocol and adds ARK-specific server response processing.
  *
  * @package GameQ\Protocols
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Arksa extends Eos
@@ -78,6 +79,7 @@ class Arksa extends Eos
      * Process the response from the EOS API and filter ARK-specific server data
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array

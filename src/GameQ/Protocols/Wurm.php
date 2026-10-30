@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Wurm Unlimited Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Wurm extends Source

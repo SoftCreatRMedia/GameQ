@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Insurgency Sandstorm Class
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Insurgencysand extends Source

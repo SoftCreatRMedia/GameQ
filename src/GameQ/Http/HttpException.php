@@ -26,6 +26,4 @@ use RuntimeException;
  *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
-final class HttpException extends RuntimeException
-{
-}
+final class HttpException extends RuntimeException {}

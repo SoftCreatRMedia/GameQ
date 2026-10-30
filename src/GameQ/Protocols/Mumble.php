@@ -101,6 +101,7 @@ class Mumble extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException|JsonException
      */
     public function processResponse(): array
@@ -141,6 +142,7 @@ class Mumble extends Protocol
         if ($root === []) {
             throw new ProtocolException("Mumble response does not contain a valid 'root' channel.");
         }
+
         $this->processChannelsAndUsers($root, $result);
 
         unset($data);

@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Hl2dm
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Hl2dm extends Source

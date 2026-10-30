@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Battlefield 1942
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Bf1942 extends Gamespy

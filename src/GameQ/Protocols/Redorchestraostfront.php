@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Red Orchestra: Ostfront 41-45 Class
  *
  * @package GameQ\Protocols
+ *
  * @author naXe <naxeify@gmail.com>
  * @author Austin Bischoff <austin@codebeard.com>
  */

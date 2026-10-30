@@ -29,6 +29,7 @@ use GameQ\Result;
  * Rules protocol reference: https://community.bistudio.com/wiki/Arma_3_ServerBrowserProtocol2
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  * @author  Memphis017 <https://github.com/Memphis017>
  */
@@ -63,6 +64,7 @@ class Arma3 extends Source
      * DLC Flags/Bits as defined in the documentation.
      *
      * @var array<int, string>
+     *
      * @see https://community.bistudio.com/wiki/Arma_3:_ServerBrowserProtocol3
      */
     protected array $dlcFlags = [
@@ -103,6 +105,7 @@ class Arma3 extends Source
      * Process the rules since Arma3 changed their response for rules
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processRules(Buffer $buffer): array

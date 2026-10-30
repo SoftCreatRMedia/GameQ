@@ -30,6 +30,7 @@ use GameQ\Server;
  * responses into readable time
  *
  * @package GameQ\Filters
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Secondstohuman extends Base
@@ -75,6 +76,7 @@ class Secondstohuman extends Base
      * Apply this filter to the result data
      *
      * @param array<string, mixed> $result
+     *
      * @return array<string, mixed>
      */
     public function apply(array $result, Server $server): array
@@ -87,7 +89,9 @@ class Secondstohuman extends Base
      * Recursively add human-readable values for configured time keys.
      *
      * @template TKey of array-key
+     *
      * @param array<TKey, mixed> $result
+     *
      * @return array<TKey|string, mixed>
      */
     protected function iterate(array $result): array
@@ -112,9 +116,17 @@ class Secondstohuman extends Base
                     true,
                 )
             ) {
-                // Work with whole seconds. Casting once avoids implicit float-to-int
-                // conversions in the modulo operations on PHP 8.1 and newer.
-                $seconds = (int) $value;
+                // Preserve the raw value, but keep its display safe for malformed
+                // floats and numeric strings. PHP_INT_MAX rounds up when compared
+                // with a float, so equality must be handled before casting too.
+                if ((is_float($value) && is_nan($value)) || $value <= 0) {
+                    $seconds = 0;
+                } elseif ($value >= PHP_INT_MAX) {
+                    $seconds = PHP_INT_MAX;
+                } else {
+                    $seconds = (int) $value;
+                }
+
                 // We match one of the keys we are wanting to convert so add it and move on
                 $result[sprintf(self::RESULT_KEY, $key)] = sprintf(
                     "%02d:%02d:%02d",

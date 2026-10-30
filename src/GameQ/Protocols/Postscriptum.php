@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Postscriptum
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Postscriptum extends Source

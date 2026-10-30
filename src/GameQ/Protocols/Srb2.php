@@ -25,6 +25,7 @@ use GameQ\Result;
  * Sonic Robo Blast 2 server protocol.
  *
  * @see https://github.com/STJr/SRB2/blob/master/src/netcode/protocol.h
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Srb2 extends Protocol

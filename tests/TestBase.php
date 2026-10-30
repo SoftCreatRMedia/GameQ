@@ -78,7 +78,9 @@ abstract class TestBase extends \PHPUnit\Framework\TestCase
      *
      * @param list<string> $responses
      * @param array<string, mixed> $serverOptions
+     *
      * @return array<string, mixed>
+     *
      * @throws LogicException
      * @throws ReflectionException
      * @throws ServerException

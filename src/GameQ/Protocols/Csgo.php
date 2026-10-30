@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Csgo
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Csgo extends Source

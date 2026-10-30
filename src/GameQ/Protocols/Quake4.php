@@ -46,6 +46,7 @@ class Quake4 extends Doom3
      * Handle processing of player data
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array

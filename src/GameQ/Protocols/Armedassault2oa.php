@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Armedassault2oa
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Armedassault2oa extends Source

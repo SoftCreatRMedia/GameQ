@@ -78,6 +78,7 @@ class Dragonwilds extends Eos
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -128,7 +129,9 @@ class Dragonwilds extends Eos
 
     /**
      * @param list<array<string, mixed>> $sessions
+     *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     private function selectSession(array $sessions): array
@@ -239,6 +242,7 @@ class Dragonwilds extends Eos
 
     /**
      * @param array<string, mixed> $values
+     *
      * @throws ProtocolException
      */
     private function requiredString(array $values, string $key): string
@@ -254,6 +258,7 @@ class Dragonwilds extends Eos
 
     /**
      * @param array<string, mixed> $values
+     *
      * @throws ProtocolException
      */
     private function requiredNonNegativeInteger(array $values, string $key): int

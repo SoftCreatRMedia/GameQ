@@ -25,6 +25,44 @@ use RuntimeException;
 
 class Native extends TestBase
 {
+    public function testLargeUdpDatagramsAreNotTruncatedOrMerged(): void
+    {
+        foreach ([9000, 40000, 60000, 65507] as $size) {
+            $listener = stream_socket_server('udp://127.0.0.1:0', $errorCode, $error, STREAM_SERVER_BIND);
+
+            if ($listener === false) {
+                self::fail('Unable to create the UDP test listener: ' . $error);
+            }
+
+            $address = stream_socket_get_name($listener, false);
+            self::assertIsString($address);
+            $separator = strrpos($address, ':');
+            self::assertNotFalse($separator);
+            $port = (int) substr($address, $separator + 1);
+            $query = new \GameQ\Query\Native();
+            $query->set(\GameQ\Protocol::TRANSPORT_UDP, '127.0.0.1', $port, 1);
+
+            try {
+                $query->write('query');
+                $peer = '';
+                self::assertSame('query', stream_socket_recvfrom($listener, 1024, 0, $peer));
+                self::assertIsString($peer);
+                $payload = substr(str_repeat("data\x00\xff", (int) ceil($size / 6)), 0, $size);
+                self::assertSame($size, stream_socket_sendto($listener, $payload, 0, $peer));
+                self::assertSame(4, stream_socket_sendto($listener, 'next', 0, $peer));
+                $socketID = (int) $query->get();
+                $responses = $query->getResponses([
+                    $socketID => ['server_id' => 'large-datagram', 'socket' => $query],
+                ], 1, 10_000);
+
+                self::assertSame([$payload, 'next'], $responses[$socketID]);
+            } finally {
+                $query->close();
+                fclose($listener);
+            }
+        }
+    }
+
     public function testResponseWaitHonorsOverallTimeout(): void
     {
         $streams = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);

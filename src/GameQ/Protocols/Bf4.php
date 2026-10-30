@@ -29,6 +29,7 @@ use GameQ\Result;
  * Good place for doc status and info is http://battlelog.battlefield.com/bf4/forum/view/2955064768683911198/
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Bf4 extends Bf3
@@ -47,6 +48,7 @@ class Bf4 extends Bf3
      * Handle processing details since they are different from BF3
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer): array

@@ -24,6 +24,7 @@ use GameQ\Result;
  * open.mp server protocol.
  *
  * @see https://open.mp/docs/tutorials/QueryMechanism
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Openmp extends Samp

@@ -136,7 +136,7 @@ class Cfx extends Protocol
                 ],
             ]);
             $results = $gameQ->process();
-        } catch (ProtocolException | QueryException | ServerException) {
+        } catch (ProtocolException|QueryException|ServerException) {
             return;
         }
 
@@ -170,6 +170,7 @@ class Cfx extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -207,6 +208,7 @@ class Cfx extends Protocol
      * Handle processing the status response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processStatus(Buffer $buffer): array

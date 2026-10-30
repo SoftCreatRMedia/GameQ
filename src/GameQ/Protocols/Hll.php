@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Hll
  *
  * @package GameQ\Protocols
+ *
  * @author Wilson Jesus <>
  */
 class Hll extends Source

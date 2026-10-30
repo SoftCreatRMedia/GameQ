@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Project Zomboid Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Zomboid extends Source

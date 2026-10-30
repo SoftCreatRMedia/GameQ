@@ -25,6 +25,7 @@ namespace GameQ\Protocols;
  * Based off of CS 1.6
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Dod extends Cs16

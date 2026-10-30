@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Dayz
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Dayz extends Source

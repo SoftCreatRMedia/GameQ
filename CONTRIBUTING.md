@@ -13,7 +13,7 @@ The [development wiki](https://github.com/SoftCreatRMedia/GameQ/wiki/Architectur
 
 ## Coding Standard
 
-- Use the [PSR-12 coding style](https://www.php-fig.org/psr/psr-12/).
+- Use PHP-CS-Fixer with the project's configured rules for coding style. PHPCS is not used because its rules conflict with the formatter.
 - Keep PHPStan clean at its maximum level without baselines or inline suppressions.
 - Use the following command to run the complete local check suite:
 

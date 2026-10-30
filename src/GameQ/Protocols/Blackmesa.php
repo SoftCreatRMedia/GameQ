@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Blackmesa Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author Jesse Lukas <eranio@g-one.org>
  */
 class Blackmesa extends Source

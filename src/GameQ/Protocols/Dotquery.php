@@ -247,6 +247,7 @@ class Dotquery extends Protocol
 
     /**
      * @param array<array-key, mixed> $body
+     *
      * @return array<string, mixed>
      */
     private function normalizeBody(array $body): array

@@ -275,6 +275,7 @@ class Buffer extends TestBase
      * @param non-empty-string $method
      * @param non-empty-string $numberType
      * @param non-empty-string $file
+     *
      * @throws ProtocolException
      * @throws ReflectionException
      */

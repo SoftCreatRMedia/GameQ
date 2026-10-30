@@ -347,4 +347,71 @@ class Source extends Base
         self::assertSame('Example server', $result['hostname']);
         self::assertSame(1, $result['num_rules']);
     }
+
+    public function testGoldSourceModEngineVersionDoesNotMisalignFollowingFields(): void
+    {
+        foreach (['', '1.1.2.7', 'custom engine build'] as $engineVersion) {
+            $response = "\xFF\xFF\xFF\xFF\x6d127.0.0.1:27015\0Example server\0map\0mod\0Description\0"
+                . pack('CCC', 1, 16, 48) . 'dl' . pack('CC', 0, 1)
+                . "https://example.org\0https://example.org/download\0" . $engineVersion . "\0"
+                . pack('VVCCCC', 123, 456, 1, 0, 1, 2);
+            $protocol = new \GameQ\Protocols\Source();
+            $protocol->packetResponse([$response]);
+
+            $result = $protocol->processResponse();
+
+            self::assertSame(123, $result['mod_version']);
+            self::assertSame(456, $result['mod_size']);
+            self::assertSame(1, $result['mod_type']);
+            self::assertSame(0, $result['mod_cldll']);
+            self::assertSame(1, $result['secure']);
+            self::assertSame(2, $result['num_bots']);
+        }
+    }
+
+    public function testPrintedQueryDenialReportsServerReason(): void
+    {
+        $this->stub->packetResponse([
+            "\xFF\xFF\xFF\xFF\x6cYou have been banned from this server.\n\0",
+        ]);
+        $this->expectException(ProtocolException::class);
+        $this->expectExceptionMessageContains('Source server rejected the query: You have been banned from this server.');
+
+        $this->stub->processResponse();
+    }
+
+    public function testPrintedQueryDenialStopsFollowUpRequests(): void
+    {
+        $server = new Server(['type' => 'source', 'host' => '127.0.0.1:27015']);
+        $this->stub->beforeSend($server);
+        $this->stub->packetResponse(["\xFF\xFF\xFF\xFF\x6cQuery access denied.\0"]);
+        self::assertSame([], $this->stub->getFollowUpPackets());
+        $this->expectException(ProtocolException::class);
+        $this->expectExceptionMessageContains('Source server rejected the query: Query access denied.');
+
+        $this->stub->processResponse();
+    }
+
+    public function testPrintedQueryDenialBoundsAndFlattensUntrustedMessage(): void
+    {
+        $this->stub->packetResponse(["\xFF\xFF\xFF\xFF\x6c" . str_repeat("text\n\0\x1b", 1000)]);
+
+        try {
+            $this->stub->processResponse();
+            self::fail('Expected a query-denial exception.');
+        } catch (ProtocolException $exception) {
+            self::assertStringStartsWith('Source server rejected the query: text', $exception->getMessage());
+            self::assertLessThanOrEqual(1058, strlen($exception->getMessage()));
+            self::assertDoesNotMatchRegularExpression('/[\x00-\x1F\x7F]/', $exception->getMessage());
+        }
+    }
+
+    public function testEmptyPrintedQueryDenialHasUsefulFallback(): void
+    {
+        $this->stub->packetResponse(["\xFF\xFF\xFF\xFF\x6c\0"]);
+        $this->expectException(ProtocolException::class);
+        $this->expectExceptionMessageContains('Source server rejected the query.');
+
+        $this->stub->processResponse();
+    }
 }

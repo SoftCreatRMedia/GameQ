@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Ffe - Fortress Forever
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Ffe extends Source

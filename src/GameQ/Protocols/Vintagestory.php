@@ -23,6 +23,7 @@ use GameQ\Server;
  * Vintage Story official master-server protocol.
  *
  * @see https://masterserver.vintagestory.at/api/v1/servers/list
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Vintagestory extends OfficialDirectory

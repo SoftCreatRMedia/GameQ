@@ -18,7 +18,6 @@ namespace GameQ\Tests\Protocols;
 
 use GameQ\Buffer;
 use GameQ\Protocol;
-use GameQ\Protocols\Dotquery as DotqueryProtocol;
 use GameQ\Server;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -51,7 +50,7 @@ class Dotquery extends TestCase
         int $flags = 0,
         int $count = 1,
         int $index = 0,
-        int $response = 1
+        int $response = 1,
     ): string {
         return 'DQP1' . pack('CCVVvv', $type, $flags, $this->transaction($protocol), $response, $count, $index)
             . self::COOKIE . $body;
@@ -97,7 +96,7 @@ class Dotquery extends TestCase
         self::assertSame(str_repeat("\0", 8), substr($request, 18, 8));
         self::assertSame(
             ['sections' => ['info', 'players', 'rules', 'game', 'teams', 'rotation', 'build']],
-            json_decode(substr($request, 26), true, 64, JSON_THROW_ON_ERROR)
+            json_decode(substr($request, 26), true, 64, JSON_THROW_ON_ERROR),
         );
 
         $options = ['query_gzip' => false, 'query_perf' => true, 'query_stats' => true, 'query_player_stats' => true];
@@ -127,16 +126,19 @@ class Dotquery extends TestCase
         $body = self::body();
         $body['padding'] = str_repeat('field-', 900);
         $json = json_encode($body, JSON_THROW_ON_ERROR);
+
         foreach ([false, true] as $gzip) {
             $protocol->beforeSend($this->server());
             $this->challenge($protocol);
             $payload = $gzip ? gzencode($json) : $json;
             self::assertIsString($payload);
             $chunks = str_split($payload, 1174);
+
             foreach (array_reverse(array_keys($chunks)) as $index) {
                 $flags = ($gzip ? 1 : 0) | (count($chunks) > 1 ? 2 : 0);
                 $protocol->appendPacketResponse([$this->packet($protocol, $chunks[$index], 0x81, $flags, count($chunks), $index)]);
             }
+
             self::assertSame($body['padding'], $protocol->processResponse()['padding']);
         }
     }
@@ -177,11 +179,13 @@ class Dotquery extends TestCase
         $protocol = $this->server()->protocolInstance();
         self::assertSame([], $protocol->getFollowUpPackets());
         self::assertSame([], $protocol->processResponse());
+
         foreach (['', str_repeat("\0", 8)] as $cookie) {
             $packet = substr($this->packet($protocol, '', 0x82), 0, 18) . $cookie;
             $protocol->packetResponse([$packet]);
             self::assertSame([], $protocol->getFollowUpPackets());
         }
+
         $protocol->packetResponse([$this->packet($protocol, '{}', 0x82)]);
         self::assertSame([], $protocol->getFollowUpPackets());
         $this->challenge($protocol);
@@ -194,10 +198,12 @@ class Dotquery extends TestCase
             $protocol = $this->server()->protocolInstance();
             $this->challenge($protocol);
             $parts = str_split(json_encode(self::body(), JSON_THROW_ON_ERROR), 200);
+
             foreach ($parts as $index => $part) {
                 if ($case === 'missing' && $index === 0) {
                     continue;
                 }
+
                 $packet = $this->packet(
                     $protocol,
                     $part,
@@ -205,13 +211,15 @@ class Dotquery extends TestCase
                     $case === 'unflagged' ? 0 : 2,
                     count($parts),
                     $index,
-                    $case === 'conflict' && $index === 0 ? 2 : 1
+                    $case === 'conflict' && $index === 0 ? 2 : 1,
                 );
                 $protocol->appendPacketResponse([$packet]);
+
                 if ($case === 'duplicate' && $index === 0) {
                     $protocol->appendPacketResponse([$packet]);
                 }
             }
+
             self::assertSame([], $protocol->processResponse(), $case);
         }
     }
@@ -222,21 +230,24 @@ class Dotquery extends TestCase
         foreach (['[]', 'null', '{', '"text"', '{"invalid":"' . "\xff" . '"}'] as $index => $body) {
             yield 'json-' . $index => [$body];
         }
+
         foreach (['rev' => '1', 'ts' => -1, 'sections' => null] as $key => $value) {
             $body = self::body();
             $body[$key] = $value;
             yield $key => [json_encode($body, JSON_THROW_ON_ERROR)];
         }
+
         foreach (['name' => [], 'players' => '1', 'max_players' => 0, 'password' => 1, 'map' => false] as $key => $value) {
             $body = self::body();
             $body['sections']['info'][$key] = $value;
             yield 'info-' . $key => [json_encode($body, JSON_THROW_ON_ERROR)];
         }
+
         foreach (
             ['players' => 'bad', 'rules' => false, 'teams' => [false], 'game' => 1,
-            'players-score' => [['name' => 'X', 'score' => '1']],
-            'players-duration' => [['name' => 'X', 'duration' => -1]],
-            'players-many' => array_fill(0, 129, ['name' => 'X']),
+                'players-score' => [['name' => 'X', 'score' => '1']],
+                'players-duration' => [['name' => 'X', 'duration' => -1]],
+                'players-many' => array_fill(0, 129, ['name' => 'X']),
             ] as $key => $value
         ) {
             $body = self::body();
@@ -314,6 +325,7 @@ class Dotquery extends TestCase
             }
 
             $result = $protocol->processResponse();
+
             if ($label === 'quota-plain') {
                 self::assertSame([], $result);
             } else {
@@ -333,7 +345,7 @@ class Dotquery extends TestCase
         $protocol->appendPacketResponse([$this->packet($protocol, json_encode($body, JSON_THROW_ON_ERROR))]);
         self::assertSame(
             [['name' => '0', 'players' => 1], ['name' => '1', 'players' => 0]],
-            $protocol->processResponse()['teams']
+            $protocol->processResponse()['teams'],
         );
     }
 }

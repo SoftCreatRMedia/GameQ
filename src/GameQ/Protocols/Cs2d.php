@@ -102,6 +102,7 @@ class Cs2d extends Protocol
      * Process the response for the Tibia server
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -121,6 +122,7 @@ class Cs2d extends Protocol
             if ($separator === '') {
                 throw new ProtocolException('The CS2D packet separator is empty.');
             }
+
             $responses = explode($separator, $buffer->getData());
 
             // Try to rebuild the second packet to the same as if it was sent as two separate responses
@@ -138,6 +140,7 @@ class Cs2d extends Protocol
      * Handles processing the details data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer): array
@@ -172,6 +175,7 @@ class Cs2d extends Protocol
      * Handles processing the player data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array
@@ -205,6 +209,7 @@ class Cs2d extends Protocol
      *
      * @param int $flags
      * @param int $offset
+     *
      * @return bool
      */
     protected function readFlag(int $flags, int $offset): bool

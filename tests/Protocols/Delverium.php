@@ -43,6 +43,7 @@ class Delverium extends TestBase
 
         foreach (['info', 'players', 'rules'] as $stage) {
             self::assertIsArray($capture[$stage]);
+
             foreach ($capture[$stage] as $hex) {
                 self::assertIsString($hex);
                 $packet = hex2bin($hex);
@@ -71,6 +72,7 @@ class Delverium extends TestBase
         self::assertSame(0, $result['gq_password']);
         self::assertIsArray($result['players']);
         self::assertCount($count, $result['players']);
+
         if ($count === 1) {
             self::assertIsArray($result['players'][0]);
             self::assertSame('GameQ Test Play', $result['players'][0]['gq_name']);

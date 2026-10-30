@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Dods
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Dods extends Source

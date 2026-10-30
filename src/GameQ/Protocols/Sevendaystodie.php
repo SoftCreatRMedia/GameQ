@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class 7 Days to Die
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Sevendaystodie extends Source

@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class ARK: Survival Evolved
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Arkse extends Source

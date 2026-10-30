@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Soldier of Fortune 2 Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Sof2 extends Quake3

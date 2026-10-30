@@ -28,6 +28,7 @@ use GameQ\Result;
  * Port reference: http://forums.joinsquad.com/topic/9559-query-ports/
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Squad extends Eos
@@ -56,6 +57,7 @@ class Squad extends Eos
      * Process and select the EOS session matching the requested Squad server.
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array

@@ -89,6 +89,7 @@ class Tibia extends Protocol
      * Process the response for the Tibia server
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array

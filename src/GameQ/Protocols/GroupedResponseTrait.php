@@ -29,7 +29,9 @@ trait GroupedResponseTrait
 {
     /**
      * @param list<string> $responses
+     *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processGroupedResponses(array $responses, int $headerLength): array

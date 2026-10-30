@@ -27,6 +27,7 @@ use GameQ\Result;
  * Class Killing floor
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Killingfloor extends Unreal2
@@ -55,6 +56,7 @@ class Killingfloor extends Unreal2
      * Overload the default detail process since this version is different
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer): array

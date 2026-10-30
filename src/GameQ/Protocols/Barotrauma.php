@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Barotrauma Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author Jesse Lukas <eranio@g-one.org>
  */
 class Barotrauma extends Source

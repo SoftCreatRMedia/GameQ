@@ -107,6 +107,7 @@ class Ffow extends Protocol
      * Handle response from the server
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -140,6 +141,7 @@ class Ffow extends Protocol
      * Handle processing the server information
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processInfo(Buffer $buffer): array
@@ -175,6 +177,7 @@ class Ffow extends Protocol
      * Handle processing the server rules
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processRules(Buffer $buffer): array
@@ -202,6 +205,7 @@ class Ffow extends Protocol
      * Handle processing of player data
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array
@@ -226,6 +230,7 @@ class Ffow extends Protocol
      * Reassemble FFOW responses that exceed a single UDP packet.
      *
      * @return list<string>
+     *
      * @throws ProtocolException
      */
     protected function reassembleResponses(): array

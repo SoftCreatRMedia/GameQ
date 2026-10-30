@@ -42,6 +42,7 @@ class Chupathingy extends TestCase
 
     /**
      * @param array<string, mixed> $options
+     *
      * @return array<string, mixed>
      */
     private function query(string $body, array $options = []): array
@@ -143,7 +144,7 @@ class Chupathingy extends TestCase
     {
         foreach (
             [null, 123, '', str_repeat('a', 44), str_repeat('a', 63), str_repeat('a', 65), str_repeat('g', 64),
-            'https://example.test/' . self::INVITE, 'halo://join/' . self::INVITE . '?x=1', self::INVITE . "\n"] as $i => $value
+                'https://example.test/' . self::INVITE, 'halo://join/' . self::INVITE . '?x=1', self::INVITE . "\n"] as $i => $value
         ) {
             yield (string) $i => [$value];
         }
@@ -205,9 +206,9 @@ class Chupathingy extends TestCase
 
         foreach (
             [1 => ['', str_repeat('N', 257), "bad\0name", "bad\xFF"], 2 => [str_repeat('m', 513)],
-            3 => ['7', '-1'], 4 => ['129', '9', '2.0'], 5 => ['0'], 6 => ['true', '2'], 7 => ['-1'],
-            8 => ['-1', '2147483648'], 10 => ['2'], 11 => ['0:A|1:B|0:C', 'bad', '0:', '0:' . str_repeat('n', 257)],
-            14 => ['fake'], 15 => ['fake'], 16 => ['pc_linux:129', 'bad', 'pc_linux:-1'], 18 => ['xyz']] as $offset => $values
+                3 => ['7', '-1'], 4 => ['129', '9', '2.0'], 5 => ['0'], 6 => ['true', '2'], 7 => ['-1'],
+                8 => ['-1', '2147483648'], 10 => ['2'], 11 => ['0:A|1:B|0:C', 'bad', '0:', '0:' . str_repeat('n', 257)],
+                14 => ['fake'], 15 => ['fake'], 16 => ['pc_linux:129', 'bad', 'pc_linux:-1'], 18 => ['xyz']] as $offset => $values
         ) {
             foreach ($values as $index => $value) {
                 $fields = $original;
@@ -250,7 +251,7 @@ class Chupathingy extends TestCase
     {
         foreach (
             [new Response(301, ''), new Response(404, ''), new Response(200, str_repeat('a', 32769)),
-            new HttpException('timeout'), new HttpException('TLS failure')] as $response
+                new HttpException('timeout'), new HttpException('TLS failure')] as $response
         ) {
             $client = new HttpClient([$response]);
             $gameQ = new GameQ();

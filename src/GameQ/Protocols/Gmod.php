@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Gmod
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Gmod extends Source

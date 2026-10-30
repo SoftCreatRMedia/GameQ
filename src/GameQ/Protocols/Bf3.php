@@ -29,6 +29,7 @@ use GameQ\Result;
  * Good place for doc status and info is http://www.fpsadmin.com/forum/showthread.php?t=24134
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Bf3 extends Bfbc2
@@ -88,6 +89,7 @@ class Bf3 extends Bfbc2
      * Process the response for the StarMade server
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -152,6 +154,7 @@ class Bf3 extends Bfbc2
      * Process the server details
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer): array

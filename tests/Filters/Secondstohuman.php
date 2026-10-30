@@ -27,6 +27,57 @@ namespace GameQ\Tests\Filters;
 class Secondstohuman extends Base
 {
     /**
+     * @return array<string, array{int|float|string, string}>
+     */
+    public static function unsafeTimeValues(): array
+    {
+        $maximum = sprintf(
+            '%02d:%02d:%02d',
+            intdiv(PHP_INT_MAX, 3600),
+            intdiv(PHP_INT_MAX, 60) % 60,
+            PHP_INT_MAX % 60,
+        );
+
+        return [
+            'nan' => [NAN, '00:00:00'],
+            'positive infinity' => [INF, $maximum],
+            'negative infinity' => [-INF, '00:00:00'],
+            'integer maximum' => [PHP_INT_MAX, $maximum],
+            'rounded float boundary' => [(float) PHP_INT_MAX, $maximum],
+            'large float' => [1.0e30, $maximum],
+            'large numeric string' => ['1e100', $maximum],
+            'integer maximum string' => [(string) PHP_INT_MAX, $maximum],
+            'negative integer' => [-1, '00:00:00'],
+            'negative float' => [-123.5, '00:00:00'],
+            'negative numeric string' => ['-1e100', '00:00:00'],
+            'zero' => [0, '00:00:00'],
+            'fractional seconds' => [59.99, '00:00:59'],
+            'numeric string' => ['3661.75', '01:01:01'],
+            'more than one day' => [90061.25, '25:01:01'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('unsafeTimeValues')]
+    public function testUnsafeTimesAreFormattedWithoutChangingRawValues(int|float|string $time, string $expected): void
+    {
+        $server = new \GameQ\Server(['type' => 'source', 'host' => '127.0.0.1:27015']);
+        $filter = new \GameQ\Filters\Secondstohuman();
+        $result = $filter->apply(['players' => [['time' => $time]]], $server);
+        self::assertIsArray($result['players']);
+        self::assertIsArray($result['players'][0]);
+        $player = $result['players'][0];
+
+        self::assertSame($expected, $player['gq_time_human']);
+
+        if (is_float($time) && is_nan($time)) {
+            self::assertIsFloat($player['time']);
+            self::assertNan($player['time']);
+        } else {
+            self::assertSame($time, $player['time']);
+        }
+    }
+
+    /**
      * Test default filter settings
      */
     public function testFilteredDefault(): void

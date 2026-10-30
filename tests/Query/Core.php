@@ -35,9 +35,7 @@ class Core extends TestBase
     public function testSet(): void
     {
         $stub = new class extends \GameQ\Query\Core {
-            protected function create(): void
-            {
-            }
+            protected function create(): void {}
 
             public function get(): mixed
             {
@@ -55,9 +53,7 @@ class Core extends TestBase
                 return 0;
             }
 
-            public function close(): void
-            {
-            }
+            public function close(): void {}
 
             public function getResponses(array $sockets, int $timeout, int $stream_timeout): array
             {

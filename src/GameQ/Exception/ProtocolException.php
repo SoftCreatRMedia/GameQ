@@ -26,6 +26,4 @@ use Exception;
 /**
  * @author Austin Bischoff <austin@codebeard.com>
  */
-class ProtocolException extends Exception
-{
-}
+class ProtocolException extends Exception {}

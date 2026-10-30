@@ -29,6 +29,7 @@ use GameQ\Result;
  * Special thanks to Woet for some insight on packing
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Justcause2 extends Gamespy4
@@ -102,6 +103,7 @@ class Justcause2 extends Gamespy4
      * Override the parent, this protocol is returned differently
      *
      * @throws ProtocolException
+     *
      * @see Gamespy3::processPlayersAndTeams()
      */
     protected function processPlayersAndTeams(Buffer $buffer, Result $result): void

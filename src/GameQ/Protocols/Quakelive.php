@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Quake Live
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Quakelive extends Source

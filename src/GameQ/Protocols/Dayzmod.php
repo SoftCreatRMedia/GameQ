@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Dayzmod
  *
  * @package GameQ\Protocols
+ *
  * @author  Marcel Bößendörfer <m.boessendoerfer@marbis.net>
  * @author  Austin Bischoff <austin@codebeard.com>
  */

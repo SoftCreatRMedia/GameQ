@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class MORDHAU
  *
  * @package GameQ\Protocols
+ *
  * @author Wilson Jesus <>
  */
 class Mordhau extends Source

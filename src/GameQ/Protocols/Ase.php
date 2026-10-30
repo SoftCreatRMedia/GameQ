@@ -90,6 +90,7 @@ class Ase extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -145,7 +146,9 @@ class Ase extends Protocol
      *
      * @param Buffer $buffer
      * @param Result $result
+     *
      * @return void
+     *
      * @throws ProtocolException
      */
     protected function processKeyValuePairs(Buffer $buffer, Result $result): void
@@ -174,7 +177,9 @@ class Ase extends Protocol
      *
      * @param Buffer $buffer
      * @param Result $result
+     *
      * @return void
+     *
      * @throws ProtocolException
      */
     protected function processPlayersAndTeams(Buffer $buffer, Result $result): void

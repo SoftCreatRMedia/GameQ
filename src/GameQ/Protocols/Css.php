@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Css
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Css extends Source

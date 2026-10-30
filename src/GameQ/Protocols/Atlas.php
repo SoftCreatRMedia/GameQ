@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Atlas
  *
  * @package GameQ\Protocols
+ *
  * @author  Wilson Jesus <>
  */
 class Atlas extends Source

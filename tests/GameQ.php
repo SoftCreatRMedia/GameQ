@@ -342,6 +342,32 @@ class GameQ extends TestBase
         self::assertSame(730, $result['steamappid']);
     }
 
+    public function testSourceQueryDenialDoesNotInterruptFollowingServers(): void
+    {
+        $info = "\xFF\xFF\xFF\xFF\x49\x11"
+            . "Healthy server\0de_dust2\0csgo\0Counter-Strike 2\0"
+            . pack('vCCC', 730, 0, 64, 0) . 'dl' . pack('CC', 0, 1) . "1.0\0";
+        FollowUpQuery::$roundResponses = [
+            ["\xFF\xFF\xFF\xFF\x6cYou have been banned from this server.\n\0"],
+            [$info],
+            ["\xFF\xFF\xFF\xFF\x44\x00"],
+            ["\xFF\xFF\xFF\xFF\x45\x00\x00"],
+        ];
+        FollowUpQuery::clearWrites();
+        $reflection = new ReflectionClass($this->stub);
+        $reflection->getProperty('queryLibrary')->setValue($this->stub, FollowUpQuery::class);
+        $this->stub->__set('max_servers_per_batch', 1);
+        $this->stub->addServer(['id' => 'denied', 'type' => 'source', 'host' => '127.0.0.1:27015']);
+        $this->stub->addServer(['id' => 'healthy', 'type' => 'source', 'host' => '127.0.0.1:27016']);
+
+        $results = $this->stub->process();
+
+        self::assertFalse($results['denied']['gq_online']);
+        self::assertTrue($results['healthy']['gq_online']);
+        self::assertSame('Healthy server', $results['healthy']['gq_hostname']);
+        self::assertCount(4, FollowUpQuery::$writes);
+    }
+
     public function testServersAreProcessedInConfiguredBatches(): void
     {
         BatchQuery::resetMetrics();

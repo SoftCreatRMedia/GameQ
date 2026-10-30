@@ -35,9 +35,7 @@ final class HttpClient implements ClientInterface
     public array $requests = [];
 
     /** @param list<Response|HttpException> $responses */
-    public function __construct(private array $responses)
-    {
-    }
+    public function __construct(private array $responses) {}
 
     public function send(Request $request): Response
     {

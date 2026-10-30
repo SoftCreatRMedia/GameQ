@@ -74,6 +74,7 @@ class Farmingsimulator extends Http
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -91,6 +92,7 @@ class Farmingsimulator extends Http
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     private function processJsonResponse(string $body): array
@@ -161,6 +163,7 @@ class Farmingsimulator extends Http
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     private function processXmlResponse(string $body): array
@@ -222,6 +225,7 @@ class Farmingsimulator extends Http
      * @param list<array<string, mixed>> $players
      * @param non-empty-string $usedSlotsKey
      * @param array<string, mixed> $additionalFields
+     *
      * @return array<string, mixed>
      */
     private function buildResult(

@@ -168,6 +168,7 @@ class Chupathingy extends VirtualHttp
 
     /**
      * @param list<string> $fields
+     *
      * @return array<string, mixed>|null
      */
     private function parseRecord(array $fields): ?array

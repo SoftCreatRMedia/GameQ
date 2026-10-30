@@ -120,6 +120,7 @@ class Metin2 extends Protocol
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -139,6 +140,7 @@ class Metin2 extends Protocol
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     private function processAdminPageResponse(string $response): array
@@ -197,6 +199,7 @@ class Metin2 extends Protocol
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     private function processChannelStatusResponse(string $response): array

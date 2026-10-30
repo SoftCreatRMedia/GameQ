@@ -35,6 +35,7 @@ class Normalize extends Base
      *
      * @param non-empty-array<string, array<string, mixed>> $raw
      * @param non-empty-array<string, array<string, mixed>> $filtered
+     *
      * @throws LogicException
      * @throws ServerException
      */

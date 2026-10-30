@@ -290,6 +290,7 @@ class GameQ
      * Add a filter to the processing list
      *
      * @param array<string, mixed> $options
+     *
      * @throws InvalidArgumentException
      */
     public function addFilter(string $filterName, array $options = []): self
@@ -374,6 +375,7 @@ class GameQ
      * Main method used to actually process all the added servers and return the information
      *
      * @return array<string, array<string, mixed>>
+     *
      * @throws InvalidArgumentException
      * @throws LogicException
      * @throws QueryException
@@ -467,6 +469,7 @@ class GameQ
                     if (!is_string($challengePacket)) {
                         throw new ProtocolException('The challenge packet must be a string.');
                     }
+
                     $socket->write($challengePacket);
 
                     // Add the socket information so we can reference it easily
@@ -652,6 +655,7 @@ class GameQ
      * Allow protocols to request response-driven follow-up packets, such as paginated results.
      *
      * @param array<int, array{server_id: string, socket: Core}> $sockets
+     *
      * @throws InvalidArgumentException
      * @throws LogicException
      * @throws QueryException
@@ -723,6 +727,7 @@ class GameQ
      * Parse the response for a specific server
      *
      * @return array<string, mixed>
+     *
      * @throws InvalidArgumentException
      * @throws LogicException
      * @throws ProtocolException
@@ -779,6 +784,7 @@ class GameQ
      * Apply any filters to the results
      *
      * @param array<string, mixed> $results
+     *
      * @return array<string, mixed>
      */
     protected function doApplyFilters(array $results, Server $server): array

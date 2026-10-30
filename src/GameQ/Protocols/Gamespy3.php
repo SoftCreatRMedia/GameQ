@@ -110,6 +110,7 @@ class Gamespy3 extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -184,7 +185,9 @@ class Gamespy3 extends Protocol
      * Handles cleaning up packets since the responses can be a bit "dirty"
      *
      * @param list<string> $packets
+     *
      * @return list<string>
+     *
      * @throws ProtocolException
      */
     protected function cleanPackets(array $packets = []): array
@@ -264,6 +267,7 @@ class Gamespy3 extends Protocol
             if ($key === '') {
                 break;
             }
+
             $result->add($key, $this->convertToUtf8($buffer->readString()));
         }
     }
@@ -340,13 +344,16 @@ class Gamespy3 extends Protocol
                     if (($val = $buf_temp->readString()) === '') {
                         break;
                     }
+
                     // Add the value to the proper item in the correct group
                     $result->addSub($item_group, $item_type, $this->convertToUtf8(trim($val)));
                 }
+
                 // Unset our buffer
                 unset($buf_temp);
             }
         }
+
         // Free up some memory
         unset($count, $data, $item, $item_group, $item_type, $val);
     }

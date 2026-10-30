@@ -20,9 +20,9 @@
 namespace GameQ\Tests\Protocols;
 
 use GameQ\Exception\ServerException;
-use GameQ\Protocols\Uptime as UptimeProtocol;
 use GameQ\Protocol;
 use GameQ\Protocols\Source;
+use GameQ\Protocols\Uptime as UptimeProtocol;
 use GameQ\Server;
 use GameQ\Tests\Fixtures\HttpClient;
 use PHPUnit\Framework\Attributes\DataProvider;

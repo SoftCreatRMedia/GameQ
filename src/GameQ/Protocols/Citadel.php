@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Citadel Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author Jesse Lukas <eranio@g-one.org>
  */
 class Citadel extends Source

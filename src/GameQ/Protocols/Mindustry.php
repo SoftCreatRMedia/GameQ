@@ -25,6 +25,7 @@ use GameQ\Result;
  * Mindustry LAN discovery protocol.
  *
  * @see https://github.com/Anuken/Mindustry/blob/master/core/src/mindustry/net/NetworkIO.java
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Mindustry extends Protocol

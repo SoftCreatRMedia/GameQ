@@ -45,6 +45,7 @@ final class BatchQuery extends Core
 
     /**
      * @return resource
+     *
      * @throws RuntimeException
      */
     public function get(): mixed

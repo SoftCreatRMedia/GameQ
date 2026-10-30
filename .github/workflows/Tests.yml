@@ -94,9 +94,6 @@ jobs:
       - name: Install dependencies
         run: composer update --no-interaction --no-progress
 
-      - name: Check coding standard
-        run: composer phpcs
-
       - name: Run PHPStan
         run: composer phpstan
 

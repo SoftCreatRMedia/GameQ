@@ -26,6 +26,7 @@ use GameQ\Exception\ProtocolException;
  * Class Rust
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Rust extends Source
@@ -84,6 +85,7 @@ class Rust extends Source
      * Overload so we can get max players from mp of keywords and num players from cp keyword
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer): array
@@ -111,6 +113,7 @@ class Rust extends Source
 
     /**
      * @param list<string> $keywords
+     *
      * @return array{
      *     'server.keywords': array<string, string|true>,
      *     'server.tags': list<string>,

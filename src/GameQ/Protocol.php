@@ -307,6 +307,7 @@ abstract class Protocol
      * Set the options for the protocol call
      *
      * @param array<string, mixed> $options
+     *
      * @return array<string, mixed>
      */
     public function options(array $options = []): array
@@ -327,7 +328,9 @@ abstract class Protocol
      * Return specific packet(s)
      *
      * @param list<string>|string $type
+     *
      * @return array<string, string>|string
+     *
      * @throws ProtocolException
      */
     public function getPacket(array|string $type = []): array|string
@@ -371,6 +374,7 @@ abstract class Protocol
      * Get/set the packet response
      *
      * @param list<string>|null $response
+     *
      * @return list<string>
      */
     public function packetResponse(?array $response = null): array
@@ -494,6 +498,7 @@ abstract class Protocol
      * Invoke a response handler declared by a protocol's response map.
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processResponseMethod(string $methodName, Buffer $buffer): array
@@ -515,6 +520,7 @@ abstract class Protocol
             if (!is_string($key)) {
                 throw new ProtocolException("Response handler '$methodName' returned a non-string result key.");
             }
+
             $parsed[$key] = $value;
         }
 
@@ -566,14 +572,13 @@ abstract class Protocol
     /**
      * Generic method to allow protocol classes to do work right before the query is sent
      */
-    public function beforeSend(Server $server): void
-    {
-    }
+    public function beforeSend(Server $server): void {}
 
     /**
      * Method called to process query response data.  Each extending class has to have one of these functions.
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     abstract public function processResponse(): array;

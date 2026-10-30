@@ -95,6 +95,7 @@ class Lhmp extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -144,6 +145,7 @@ class Lhmp extends Protocol
      * Handles processing the details data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processDetails(Buffer $buffer): array
@@ -167,6 +169,7 @@ class Lhmp extends Protocol
      * Handles processing the player data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array

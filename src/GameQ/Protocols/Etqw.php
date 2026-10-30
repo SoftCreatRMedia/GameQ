@@ -93,6 +93,7 @@ class Etqw extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -120,6 +121,7 @@ class Etqw extends Protocol
      * Handle processing the status response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processStatus(Buffer $buffer): array
@@ -141,9 +143,11 @@ class Etqw extends Protocol
             if ($var === '' && $val === '') {
                 break;
             }
+
             // Add the server prop
             $result->add($var, $val);
         }
+
         // Now let's do the basic player info
         $this->parsePlayers($buffer, $result);
 
@@ -174,7 +178,9 @@ class Etqw extends Protocol
      *
      * @param Buffer $buffer
      * @param Result $result
+     *
      * @return void
+     *
      * @throws ProtocolException
      */
     protected function parsePlayers(Buffer $buffer, Result $result): void
@@ -205,7 +211,9 @@ class Etqw extends Protocol
      *
      * @param Buffer $buffer
      * @param Result $result
+     *
      * @return void
+     *
      * @throws ProtocolException
      */
     protected function parsePlayersExtra(Buffer $buffer, Result $result): void

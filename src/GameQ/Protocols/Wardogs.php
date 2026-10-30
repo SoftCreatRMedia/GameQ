@@ -227,6 +227,7 @@ class Wardogs extends Http
 
     /**
      * @param array<string, mixed> $capabilities
+     *
      * @return list<string>
      */
     private function capabilityRoutes(array $capabilities): array

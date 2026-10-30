@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Life is Feudal
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Lifeisfeudal extends Source

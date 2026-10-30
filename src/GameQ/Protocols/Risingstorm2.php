@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Rising Storm 2
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Risingstorm2 extends Source

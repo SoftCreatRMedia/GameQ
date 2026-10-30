@@ -44,6 +44,7 @@ class Cfxinfo extends Http
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array

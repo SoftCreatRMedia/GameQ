@@ -102,6 +102,7 @@ class Teamspeak2 extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -159,7 +160,9 @@ class Teamspeak2 extends Protocol
      *
      * @param string $data
      * @param Result $result
+     *
      * @return void
+     *
      * @throws ProtocolException
      */
     protected function processDetails(string $data, Result $result): void
@@ -190,7 +193,9 @@ class Teamspeak2 extends Protocol
      *
      * @param string $data
      * @param Result $result
+     *
      * @return void
+     *
      * @throws ProtocolException
      */
     protected function processChannels(string $data, Result $result): void
@@ -212,6 +217,7 @@ class Teamspeak2 extends Protocol
             if (count($columns) !== count($values)) {
                 throw new ProtocolException('The TeamSpeak 2 channel response has invalid columns.');
             }
+
             $data = array_combine($columns, $values);
 
             foreach ($data as $key => $value) {
@@ -228,7 +234,9 @@ class Teamspeak2 extends Protocol
      *
      * @param string $data
      * @param Result $result
+     *
      * @return void
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(string $data, Result $result): void
@@ -250,6 +258,7 @@ class Teamspeak2 extends Protocol
             if (count($columns) !== count($values)) {
                 throw new ProtocolException('The TeamSpeak 2 player response has invalid columns.');
             }
+
             $data = array_combine($columns, $values);
 
             foreach ($data as $key => $value) {

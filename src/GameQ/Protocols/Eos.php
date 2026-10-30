@@ -30,6 +30,7 @@ use JsonException;
  * Serves as a base class for EOS-powered games.
  *
  * @package GameQ\Protocols
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Eos extends Http
@@ -123,6 +124,7 @@ class Eos extends Http
      * Process the response from the EOS API
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -141,6 +143,7 @@ class Eos extends Http
      * Decode the session list returned by EOS.
      *
      * @return list<array<string, mixed>>
+     *
      * @throws ProtocolException
      */
     protected function getServerSessions(): array
@@ -244,6 +247,7 @@ class Eos extends Http
             if (!is_string($deviceAccessToken) || $deviceAccessToken === '') {
                 return null;
             }
+
             $authFields['external_auth_type'] = 'deviceid_access_token';
             $authFields['external_auth_token'] = $deviceAccessToken;
             $authFields['nonce'] = 'ABCHFA3qgUCJ1XTPAoGDEF';
@@ -336,6 +340,7 @@ class Eos extends Http
      * Execute an HTTP request
      *
      * @param list<string> $headers
+     *
      * @return array<string, mixed>|null
      */
     protected function httpRequest(string $url, array $headers, string $postFields): ?array

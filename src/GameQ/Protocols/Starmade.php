@@ -86,6 +86,7 @@ class Starmade extends Protocol
      * Process the response for the StarMade server
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -141,6 +142,7 @@ class Starmade extends Protocol
      * Parse the server response parameters
      *
      * @return list<bool|float|int|string|list<int>>
+     *
      * @throws ProtocolException
      */
     protected function parseServerParameters(Buffer $buffer): array

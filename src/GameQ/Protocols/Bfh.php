@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Battlefield Hardline Protocol class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Bfh extends Bf4

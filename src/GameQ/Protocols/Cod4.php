@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Call of Duty 4 Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Cod4 extends Cod

@@ -25,6 +25,7 @@ use GameQ\Exception\ProtocolException;
  * Class Cs16
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Cs16 extends Source
@@ -47,6 +48,7 @@ class Cs16 extends Source
      * @param list<string> $packets
      *
      * @return string
+     *
      * @throws ProtocolException
      */
     protected function processPackets(int $packet_id, array $packets = []): string

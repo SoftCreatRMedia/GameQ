@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Miscreated
  *
  * @package GameQ\Protocols
+ *
  * @author Wilson Jesus <>
  */
 class Miscreated extends Source

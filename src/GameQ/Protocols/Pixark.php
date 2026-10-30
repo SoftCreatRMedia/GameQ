@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class PixARK
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Pixark extends Arkse

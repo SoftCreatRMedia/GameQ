@@ -101,6 +101,7 @@ class Server
      * Construct the class with the passed options
      *
      * @param array<string, mixed> $server_info
+     *
      * @throws ServerException
      */
     public function __construct(array $server_info = [])
@@ -233,6 +234,7 @@ class Server
     /**
      * @param array<string, mixed> $serverInfo
      * @param class-string<VirtualHttp> $protocolClass
+     *
      * @throws ServerException
      */
     private function initializeVirtualTarget(array $serverInfo, string $protocolClass): void
@@ -372,7 +374,9 @@ class Server
      * Return the protocol class for this server
      *
      * @return Protocol|null
+     *
      * @throws LogicException
+     *
      * @deprecated 5.0.0 Use protocolInstance() for a non-null return type.
      */
     public function protocol(): ?Protocol

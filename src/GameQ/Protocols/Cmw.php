@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Cmw
  *
  * @package GameQ\Protocols
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Cmw extends Source

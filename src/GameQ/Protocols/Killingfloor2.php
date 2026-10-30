@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Killing floor
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Killingfloor2 extends Source

@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Empyrion - Galactic Survival
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  * @author  TacTicToe66 <https://github.com/TacTicToe66>
  */

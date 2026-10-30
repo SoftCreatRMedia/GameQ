@@ -23,6 +23,7 @@ use GameQ\Server;
  * OpenRCT2 official master-server protocol.
  *
  * @see https://github.com/OpenRCT2/OpenRCT2/blob/develop/src/openrct2/network/ServerList.cpp
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Openrct2 extends OfficialDirectory

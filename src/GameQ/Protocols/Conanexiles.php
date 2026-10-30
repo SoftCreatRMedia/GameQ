@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Conanexiles
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  */
 class Conanexiles extends Source

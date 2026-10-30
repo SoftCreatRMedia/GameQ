@@ -54,6 +54,7 @@ class Uox3 extends Protocol
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -97,6 +98,7 @@ class Uox3 extends Protocol
 
     /**
      * @param array<string, string> $values
+     *
      * @throws ProtocolException
      */
     private function numericValue(array $values, string $key, string $suffix = ''): int

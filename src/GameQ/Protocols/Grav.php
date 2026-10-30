@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Grav Online Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Grav extends Source

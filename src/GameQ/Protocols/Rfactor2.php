@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class rFactor2
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  * @author Jesse Lukas <eranio@g-one.org>
  */

@@ -30,6 +30,4 @@ namespace GameQ\Protocols;
  *
  * @author Austin Bischoff <austin@codebeard.com>
  */
-class Gamespy4 extends Gamespy3
-{
-}
+class Gamespy4 extends Gamespy3 {}

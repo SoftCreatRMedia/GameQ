@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Dark and Light
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Dal extends Arkse

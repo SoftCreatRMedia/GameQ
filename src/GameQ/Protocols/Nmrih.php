@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class No More Room in Hell
  *
  * @package GameQ\Protocols
+ *
  * @author Austin Bischoff <austin@codebeard.com>
  * @author Jesse Lukas <eranio@g-one.org>
  */

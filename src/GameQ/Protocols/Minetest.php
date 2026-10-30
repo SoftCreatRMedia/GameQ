@@ -23,6 +23,7 @@ use GameQ\Server;
  * Luanti (formerly Minetest) official server-list protocol.
  *
  * @see https://servers.minetest.net/
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Minetest extends OfficialDirectory

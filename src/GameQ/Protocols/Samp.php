@@ -125,6 +125,7 @@ class Samp extends Protocol
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -179,6 +180,7 @@ class Samp extends Protocol
      * Handles processing the server status data
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processStatus(Buffer $buffer): array
@@ -206,6 +208,7 @@ class Samp extends Protocol
      * Handles processing the player data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array
@@ -231,6 +234,7 @@ class Samp extends Protocol
      * Handles processing the rules data into a usable format
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processRules(Buffer $buffer): array

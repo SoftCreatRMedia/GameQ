@@ -34,6 +34,7 @@ class Stripcolors extends Base
      * Apply this filter
      *
      * @param array<string, mixed> $result
+     *
      * @return array<string, mixed>
      */
     public function apply(array $result, Server $server): array

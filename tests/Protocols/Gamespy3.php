@@ -87,6 +87,7 @@ class Gamespy3 extends Base
         $protocol = new class extends \GameQ\Protocols\Gamespy3 {
             /**
              * @param list<string> $packets
+             *
              * @return list<string>
              */
             public function cleanPacketList(array $packets): array
@@ -114,6 +115,7 @@ class Gamespy3 extends Base
         $protocol = new class extends \GameQ\Protocols\Gamespy3 {
             /**
              * @param list<string> $packets
+             *
              * @return list<string>
              */
             public function cleanPacketList(array $packets): array

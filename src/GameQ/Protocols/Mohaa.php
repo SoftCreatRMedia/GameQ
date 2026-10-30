@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Medal of honor: Allied Assault Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Bram <https://github.com/Stormyy>
  * @author  Austin Bischoff <austin@codebeard.com>
  */

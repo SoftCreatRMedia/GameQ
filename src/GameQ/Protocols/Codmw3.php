@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Codmw3
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Codmw3 extends Source

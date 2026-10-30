@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Jedi Outcast Protocol Class
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Jedioutcast extends Quake3

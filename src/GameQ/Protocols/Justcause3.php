@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Just Cause 3
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Justcause3 extends Source

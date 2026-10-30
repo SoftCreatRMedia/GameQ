@@ -34,6 +34,7 @@ class Test extends Base
      * Apply the filter.  For this we just return whatever is sent
      *
      * @param array<string, mixed> $result
+     *
      * @return array<string, mixed>
      */
     public function apply(array $result, Server $server): array

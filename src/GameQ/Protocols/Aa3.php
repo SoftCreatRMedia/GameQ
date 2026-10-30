@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Aa3
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Aa3 extends Source

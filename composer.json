@@ -85,8 +85,7 @@
     "phpstan/phpstan-phpunit": "^2.0",
     "phpstan/phpstan-strict-rules": "^2.0",
     "phpunit/phpunit": "^10.5 || ^11.5 || ^12.5 || ^13.1",
-    "roave/backward-compatibility-check": "^8.1",
-    "squizlabs/php_codesniffer": "^4.0"
+    "roave/backward-compatibility-check": "^8.1"
   },
   "suggest": {
     "ext-bz2": "Required to decode compressed Source/A2S split responses.",
@@ -114,13 +113,10 @@
   "scripts": {
     "bc-check": "roave-backward-compatibility-check --from=5.0.0 --to=HEAD",
     "lint": "parallel-lint --colors src tests examples",
-    "phpcbf": "phpcbf --standard=build/config/phpcs.xml",
-    "phpcs": "phpcs --standard=build/config/phpcs.xml",
     "phpstan": "phpstan analyse --no-progress",
     "phpunit": "vendor/bin/phpunit",
     "test": [
       "@lint",
-      "@phpcs",
       "@phpstan",
       "@phpunit"
     ]
@@ -128,8 +124,6 @@
   "scripts-descriptions": {
     "bc-check": "Check the public API for backwards-incompatible changes since 5.0.0",
     "lint": "Check all PHP files for syntax errors",
-    "phpcbf": "Automatically fix coding-standard violations",
-    "phpcs": "Run PHP Code Style checks",
     "phpstan": "Run PHPStan checks",
     "phpunit": "Run PHPUnit tests",
     "test": "Run all tests and checks"

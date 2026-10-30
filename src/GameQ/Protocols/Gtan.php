@@ -120,6 +120,7 @@ class Gtan extends Http
      * Process the response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array

@@ -111,6 +111,7 @@ class Cryofall extends Protocol
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array

@@ -31,6 +31,7 @@ class Rust extends Base
         $protocol = new class extends \GameQ\Protocols\Rust {
             /**
              * @param list<string> $keywords
+             *
              * @return array<string, mixed>
              */
             public function parseForTest(array $keywords): array

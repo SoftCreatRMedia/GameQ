@@ -22,6 +22,7 @@ use GameQ\Result;
  * Kerbal Space Program DarkMultiPlayer JSON status protocol.
  *
  * @see https://github.com/DarklightGames/DarkMultiPlayer/blob/master/Server/ServerInfo.cs
+ *
  * @author Sascha Greuel <sascha@softcreatr.de>
  */
 class Kspdmp extends JsonHttp

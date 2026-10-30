@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Battlefield 2
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Bf2 extends Gamespy3

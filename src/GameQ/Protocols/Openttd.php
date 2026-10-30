@@ -30,6 +30,7 @@ use GameQ\Result;
  * Handles processing Open Transport Tycoon Deluxe servers
  *
  * @package GameQ\Protocols
+ *
  * @author Wilson Jesus <>
  */
 class Openttd extends Protocol
@@ -82,6 +83,7 @@ class Openttd extends Protocol
      * Handle response from the server
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -112,6 +114,7 @@ class Openttd extends Protocol
      * Handle processing the server information
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processServerInfo(Buffer $buffer): array

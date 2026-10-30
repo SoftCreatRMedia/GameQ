@@ -25,6 +25,7 @@ namespace GameQ\Protocols;
  * Apparently the player response is incomplete as there is no information being returned for that packet
  *
  * @package GameQ\Protocols
+ *
  * @author  Austin Bischoff <austin@codebeard.com>
  */
 class Dow extends Source

@@ -95,6 +95,7 @@ class Buffer
      * Read from the buffer
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function read(int $length = 1): string
@@ -116,6 +117,7 @@ class Buffer
      * the character from the buffer.
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readLast(): string
@@ -150,6 +152,7 @@ class Buffer
      * Skip forward in the buffer
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function skip(int $length = 1): void
@@ -184,6 +187,7 @@ class Buffer
      * If not found, return everything
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readString(string $delim = "\x00"): string
@@ -210,6 +214,7 @@ class Buffer
      * @param bool $read_offset True if the data after the offset is to be read
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readPascalString(int $offset = 0, bool $read_offset = false): string
@@ -232,7 +237,9 @@ class Buffer
      * If not found, return everything
      *
      * @param list<string> $delims
+     *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readStringMulti(array $delims, ?string &$delimfound = null): string
@@ -269,6 +276,7 @@ class Buffer
      * Read an 8-bit unsigned integer
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readInt8(): int
@@ -280,6 +288,7 @@ class Buffer
      * Read and 8-bit signed integer
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readInt8Signed(): int
@@ -291,6 +300,7 @@ class Buffer
      * Read a 16-bit unsigned integer
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readInt16(): int
@@ -309,6 +319,7 @@ class Buffer
      * Read a 16-bit signed integer
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readInt16Signed(): int
@@ -328,6 +339,7 @@ class Buffer
      * Read a 32-bit unsigned integer
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readInt32(int $length = 4): int
@@ -370,6 +382,7 @@ class Buffer
      * Read a 32-bit signed integer
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readInt32Signed(): int
@@ -389,6 +402,7 @@ class Buffer
      * Read a 64-bit unsigned integer
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readInt64(): int
@@ -425,6 +439,7 @@ class Buffer
      * Read a 32-bit float
      *
      * @phpstan-impure
+     *
      * @throws ProtocolException
      */
     public function readFloat32(): float

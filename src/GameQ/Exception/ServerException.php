@@ -26,6 +26,4 @@ use Exception;
 /**
  * @author Austin Bischoff <austin@codebeard.com>
  */
-class ServerException extends Exception
-{
-}
+class ServerException extends Exception {}

@@ -81,6 +81,7 @@ class Quake3 extends Protocol
      * Handle processing the server information
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processServerInfo(Buffer $buffer): array
@@ -107,6 +108,7 @@ class Quake3 extends Protocol
      * Handle processing of player data
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array

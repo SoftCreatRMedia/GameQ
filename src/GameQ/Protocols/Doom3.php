@@ -30,6 +30,7 @@ use GameQ\Result;
  * Handles processing DOOM 3 servers
  *
  * @package GameQ\Protocols
+ *
  * @author Wilson Jesus <>
  */
 class Doom3 extends Protocol
@@ -95,6 +96,7 @@ class Doom3 extends Protocol
      * Handle response from the server
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -118,6 +120,7 @@ class Doom3 extends Protocol
      * Process the status response
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processStatus(Buffer $buffer): array
@@ -135,6 +138,7 @@ class Doom3 extends Protocol
      * Handle processing the server information
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processServerInfo(Buffer $buffer): array
@@ -164,6 +168,7 @@ class Doom3 extends Protocol
      * Handle processing of player data
      *
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     protected function processPlayers(Buffer $buffer): array

@@ -23,6 +23,7 @@ namespace GameQ\Protocols;
  * Class Contagion
  *
  * @package GameQ\Protocols
+ *
  * @author  Nikolay Ipanyuk <rostov114@gmail.com>
  * @author  Austin Bischoff <austin@codebeard.com>
  */

@@ -128,6 +128,7 @@ abstract class Core
      * Get the socket
      *
      * @return resource
+     *
      * @throws QueryException
      */
     abstract public function get(): mixed;
@@ -136,7 +137,9 @@ abstract class Core
      * Write data to the socket
      *
      * @param string|list<string> $data
+     *
      * @return int The number of bytes written
+     *
      * @throws QueryException
      */
     abstract public function write(string|array $data): int;
@@ -150,6 +153,7 @@ abstract class Core
      * Read the responses from the socket(s)
      *
      * @param array<int, array{server_id: string, socket: Core}> $sockets
+     *
      * @return array<int, list<string>>
      */
     abstract public function getResponses(array $sockets, int $timeout, int $stream_timeout): array;

@@ -64,6 +64,7 @@ abstract class JsonHttp extends Http
 
     /**
      * @param array<string, mixed> $data
+     *
      * @return array<string, mixed>
      */
     abstract protected function processJson(array $data): array;

@@ -2,7 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
-## WIP
+## [5.3.0] - 2026-10-30
+
+### Fixed
+
+- Fixed GoldSource mod information becoming misaligned when a server includes a nonempty engine-version string.
+- Prevented invalid and overflowing player times from causing PHP warnings or malformed human-readable durations, while preserving the original values.
+- Fixed native UDP queries truncating datagrams larger than 32 KiB.
+- Source query denials now report the server's bounded rejection message instead of an unknown-response-type error.
 
 ### Added
 

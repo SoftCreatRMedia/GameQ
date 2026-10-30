@@ -147,6 +147,7 @@ class Hytaleone extends Protocol
      * Request the next player-list page advertised by a V2 response.
      *
      * @return list<string>
+     *
      * @throws ProtocolException
      */
     public function getFollowUpPackets(): array
@@ -192,6 +193,7 @@ class Hytaleone extends Protocol
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     public function processResponse(): array
@@ -207,6 +209,7 @@ class Hytaleone extends Protocol
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     private function processV2Responses(): array
@@ -263,6 +266,7 @@ class Hytaleone extends Protocol
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     private function processV1Responses(): array
@@ -323,6 +327,7 @@ class Hytaleone extends Protocol
      *     request_id: int,
      *     tlvs: list<array{type: int, data: string}>
      * }>
+     *
      * @throws ProtocolException
      */
     private function parseV2Packets(): array
@@ -372,6 +377,7 @@ class Hytaleone extends Protocol
 
     /**
      * @return array<string, mixed>
+     *
      * @throws ProtocolException
      */
     private function readV2ServerInfo(string $data, int $flags): array
@@ -397,6 +403,7 @@ class Hytaleone extends Protocol
 
     /**
      * @return array{total: int, count: int, offset: int}
+     *
      * @throws ProtocolException
      */
     private function readV2PlayerPageHeader(string $data): array
@@ -419,6 +426,7 @@ class Hytaleone extends Protocol
 
     /**
      * @return array{total: int, offset: int, players: list<array{name: string, uuid: string}>}
+     *
      * @throws ProtocolException
      */
     private function readV2PlayerPage(string $data): array
@@ -474,6 +482,7 @@ class Hytaleone extends Protocol
 
     /**
      * @return list<array{id: string, version: string, enabled: bool}>
+     *
      * @throws ProtocolException
      */
     private function readV1Plugins(Buffer $buffer): array
