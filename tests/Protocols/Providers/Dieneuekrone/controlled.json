@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "schema": 1,
+  "generated_at": 1795816846,
+  "requested_version": "",
+  "servers": [{
+    "server_id": "11111111111111111111111111111111",
+    "server_name": "GameQ-Krone-Local-Test",
+    "master_port": 17777,
+    "endpoint": "127.0.0.1:17777",
+    "version": "0.9.0.0",
+    "max_games": 2,
+    "room_count": 0,
+    "running_rooms": 0,
+    "players": 0,
+    "rooms": [],
+    "last_seen": 1795816839,
+    "age_seconds": 7,
+    "stale": false
+  }]
+}

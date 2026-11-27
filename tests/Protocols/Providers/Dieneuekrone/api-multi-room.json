@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "schema": 1,
+  "generated_at": 1795816870,
+  "requested_version": "",
+  "servers": [{
+    "server_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "server_name": "GameQ API Contract Test",
+    "master_port": 17779,
+    "endpoint": "127.0.0.1:17779",
+    "version": "0.9.0.0",
+    "max_games": 2,
+    "room_count": 2,
+    "running_rooms": 1,
+    "players": 3,
+    "rooms": [
+      {"id": "room-one", "name": "Test Lobby", "status": "lobby", "humans": 1, "seats": 2, "max_players": 4, "year": 0},
+      {"id": "room-two", "name": "Test Running", "status": "running", "humans": 2, "seats": 4, "max_players": 4, "year": 1200}
+    ],
+    "last_seen": 1795816870,
+    "age_seconds": 0,
+    "stale": false
+  }, {
+    "server_id": "11111111111111111111111111111111",
+    "server_name": "GameQ-Krone-Local-Test",
+    "master_port": 17777,
+    "endpoint": "127.0.0.1:17777",
+    "version": "0.9.0.0",
+    "max_games": 2,
+    "room_count": 0,
+    "running_rooms": 0,
+    "players": 0,
+    "rooms": [],
+    "last_seen": 1795816859,
+    "age_seconds": 11,
+    "stale": false
+  }]
+}

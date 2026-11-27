@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [5.4.0] - 2026-11-28
+
+### Added
+
+- Beta Nuclear Option support through the official dedicated server's Steam A2S interface, including mission, player counts, version, advertised password state and native rules. Gameplay and query ports can be configured independently.
+- Beta LIMP MODE support through the dedicated server's A2S query socket, including roleplay/drift mode, player counts, version and native mod rules. This queries a reachable monitoring socket, not the game's Steam relay address.
+- Beta Die Neue Krone support through its fixed official HTTPS directory, with exact master-address matching, optional public master-ID pinning, player totals, version and room metadata. Stale, malformed, duplicate and ambiguous records are rejected without exposing registration or administrative secrets.
+- Beta The Hero's Legacy support through the official dedicated server's A2S interface, including world, player counts, version, advertised password state and native Hardcore/difficulty tags. Unsupported rules queries are off by default.
+- Beta Ruins To Fortress support through the official 0.9.1 dedicated server's A2S interface, including mode, player counts, version, advertised password state and native rules. No custom port offset is assumed.
+- Controlled-server captures and regression tests for the five new identifiers. Populated game-client rosters remain unverified; directory API-contract examples are explicitly distinguished from real joined clients.
+
 ## [5.3.0] - 2026-10-30
 
 ### Fixed

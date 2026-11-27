@@ -1,0 +1,31 @@
+{
+    "127.0.0.1:7777": {
+        "protocol": 17,
+        "hostname": "GameQ Heros Legacy Local Test",
+        "map": "Server World",
+        "game_dir": "herolegacy",
+        "game_descr": "The Hero's Legacy",
+        "steamappid": 0,
+        "num_players": 0,
+        "max_players": 4,
+        "num_bots": 0,
+        "dedicated": "d",
+        "os": "w",
+        "password": 1,
+        "secure": 1,
+        "version": "0.9.6",
+        "port": 7777,
+        "steam_id": 90298425542943753,
+        "keywords": "v0.9.6,sc,d0",
+        "game_id": 5416430,
+        "gq_online": true,
+        "gq_address": "127.0.0.1",
+        "gq_port_client": 7777,
+        "gq_port_query": 27016,
+        "gq_protocol": "source",
+        "gq_type": "heroslegacy",
+        "gq_name": "The Hero's Legacy",
+        "gq_transport": "udp",
+        "gq_joinlink": ""
+    }
+}
