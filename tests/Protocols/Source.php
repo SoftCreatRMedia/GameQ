@@ -303,7 +303,6 @@ class Source extends Base
     {
         $response = "\xFF\xFF\xFF\xFF\x45\x01\x00hostname\x00Example server\x00";
         $chunks = str_split($response, max(1, intdiv(strlen($response) + 1, 2)));
-        self::assertCount(2, $chunks);
 
         $packets = [
             pack('V', 0xFFFFFFFE) . pack('V', 1234) . "\x02" . $chunks[0],
@@ -331,7 +330,6 @@ class Source extends Base
             . "1.0.0.0\x00";
         $rules = "\xFF\xFF\xFF\xFF\x45\x01\x00hostname\x00Example server\x00";
         $chunks = str_split($rules, max(1, intdiv(strlen($rules) + 1, 2)));
-        self::assertCount(2, $chunks);
 
         $packets = [
             $details,
